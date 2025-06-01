@@ -19,5 +19,6 @@
     <string name="are_you_sure_want_to_delete_this_note">Are You Sure Want To Delete This Note</string>
     <string name="note_title">Note Title</string>
     <string name="note_tille">Note Tille</string>
+    <string name="format">Format</string>
 
 </resources>

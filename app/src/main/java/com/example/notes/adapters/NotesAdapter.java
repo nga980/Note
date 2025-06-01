@@ -4,6 +4,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Handler; // Thêm import này
+import android.os.Looper;  // Thêm import này
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,20 +21,29 @@ import com.example.notes.entities.Note;
 import com.example.notes.listeners.NotesListener;
 import com.makeramen.roundedimageview.RoundedImageView;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> {
 
     private static final String TAG = "NotesAdapter";
     private List<Note> notes;
     private NotesListener notesListener;
+    // Thêm danh sách này để giữ bản gốc của tất cả các ghi chú
+    private List<Note> notesSource;
+
     // Định nghĩa màu mặc định
     private static final String DEFAULT_NOTE_COLOR = "#333333";
+
+    private Timer timer;
 
 
     public NotesAdapter(List<Note> notes, NotesListener notesListener) {
         this.notes = notes;
         this.notesListener = notesListener;
+        this.notesSource = new ArrayList<>(notes); // <<<< KHỞI TẠO notesSource
     }
 
     @NonNull
@@ -47,14 +58,12 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
     }
 
     @Override
-    public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) { // position ở đây vẫn ổn vì nó được dùng để lấy data ban đầu
+    public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         holder.setNote(notes.get(position));
         holder.layoutNote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // SỬA LỖI TẠI ĐÂY: Sử dụng holder.getAdapterPosition()
-                int currentPosition = holder.getAdapterPosition();
-                // Luôn kiểm tra RecyclerView.NO_POSITION trước khi sử dụng
+                int currentPosition = holder.getBindingAdapterPosition();
                 if (currentPosition != RecyclerView.NO_POSITION && notesListener != null) {
                     notesListener.onNoteClicked(notes.get(currentPosition), currentPosition);
                 }
@@ -67,8 +76,63 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         return notes != null ? notes.size() : 0;
     }
 
-    static class NoteViewHolder extends RecyclerView.ViewHolder {
+    // Phương thức để cập nhật danh sách notes từ bên ngoài (ví dụ từ MainActivity sau khi fetch từ DB)
+    public void updateNotesList(List<Note> newNotes) {
+        this.notes.clear();
+        this.notes.addAll(newNotes);
+        this.notesSource.clear();
+        this.notesSource.addAll(newNotes);
+        notifyDataSetChanged();
+    }
 
+
+    public void searchNotes(final String searchKeyword) {
+        Log.d(TAG, "searchNotes called with keyword: " + searchKeyword);
+        notes.clear();
+        if (searchKeyword == null || searchKeyword.trim().isEmpty()) {
+            Log.d(TAG, "Keyword is empty, loading all notes.");
+            notes.addAll(notesSource);
+        } else {
+            String lowerCaseKeyword = searchKeyword.toLowerCase();
+            Log.d(TAG, "Filtering with lowerCaseKeyword: " + lowerCaseKeyword);
+            for (Note note : notesSource) {
+                boolean matches = false;
+                if (note.getTitle() != null && note.getTitle().toLowerCase().contains(lowerCaseKeyword)) {
+                    matches = true;
+                }
+                if (!matches && note.getSubtitle() != null && note.getSubtitle().toLowerCase().contains(lowerCaseKeyword)) {
+                    matches = true;
+                }
+                // Bạn có thể muốn tìm kiếm cả trong note.getNoteText() nữa
+                if (!matches && note.getNoteText() != null && note.getNoteText().toLowerCase().contains(lowerCaseKeyword)) {
+                    matches = true;
+                }
+
+                if (matches) {
+                    notes.add(note);
+                }
+            }
+        }
+        Log.d(TAG, "Number of notes after filtering: " + notes.size());
+        // Sử dụng Handler để đảm bảo notifyDataSetChanged chạy trên Main Thread
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                notifyDataSetChanged();
+            }
+        });
+    }
+
+
+    public void cancelTimer() {
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+            Log.d(TAG, "Timer cancelled in adapter.");
+        }
+    }
+
+    static class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView textTitle, textSubTitle, textDateTime;
         LinearLayout layoutNote;
         RoundedImageView imageNoteItem;
@@ -81,7 +145,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             layoutNote = itemView.findViewById(R.id.layoutNote);
             imageNoteItem = itemView.findViewById(R.id.imageNote);
 
-            // Các log này hữu ích khi debug layout
             if (textTitle == null) Log.e(TAG, "NoteViewHolder: textTitle is null.");
             if (textSubTitle == null) Log.e(TAG, "NoteViewHolder: textSubTitle is null.");
             if (textDateTime == null) Log.e(TAG, "NoteViewHolder: textDateTime is null.");
@@ -92,7 +155,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         void setNote(Note note) {
             if (note == null) {
                 Log.w(TAG, "Attempting to set a null note to ViewHolder");
-                if (layoutNote != null) layoutNote.setVisibility(View.GONE); // Ẩn view nếu note null
+                if (layoutNote != null) layoutNote.setVisibility(View.GONE);
                 return;
             }
             if (layoutNote != null) layoutNote.setVisibility(View.VISIBLE);
@@ -116,7 +179,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                     textDateTime.setText(note.getDateTime());
                     textDateTime.setVisibility(View.VISIBLE);
                 } else {
-                    // Bạn có thể muốn ẩn textDateTime nếu không có ngày giờ
                     textDateTime.setVisibility(View.GONE);
                 }
             }
@@ -134,7 +196,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                     }
                 } catch (IllegalArgumentException e) {
                     Log.e(TAG, "Mã màu không hợp lệ: " + colorStr, e);
-                    parsedColor = Color.parseColor(DEFAULT_NOTE_COLOR); // Màu mặc định nếu lỗi
+                    parsedColor = Color.parseColor(DEFAULT_NOTE_COLOR);
                 }
 
                 if (background instanceof GradientDrawable) {
@@ -146,9 +208,6 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
             if (imageNoteItem != null) {
                 if (note.getImagePath() != null && !note.getImagePath().trim().isEmpty()) {
-                    // CẢI THIỆN: Việc decode bitmap nên được thực hiện ở background thread,
-                    // đặc biệt nếu ảnh lớn hoặc danh sách dài.
-                    // Cân nhắc dùng thư viện như Glide hoặc Picasso.
                     try {
                         Bitmap bitmap = BitmapFactory.decodeFile(note.getImagePath());
                         if (bitmap != null) {
@@ -158,10 +217,9 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                             Log.w(TAG, "Bitmap rỗng từ file path: " + note.getImagePath() + " cho note: " + (note.getTitle() != null ? note.getTitle() : "N/A"));
                             imageNoteItem.setVisibility(View.GONE);
                         }
-                    } catch (OutOfMemoryError oom) { // Bắt lỗi cụ thể hơn
+                    } catch (OutOfMemoryError oom) {
                         Log.e(TAG, "Lỗi OutOfMemoryError khi decode file ảnh: " + note.getImagePath(), oom);
                         imageNoteItem.setVisibility(View.GONE);
-                        // Có thể thông báo cho người dùng hoặc giải phóng bộ nhớ nếu cần
                     } catch (Exception e) {
                         Log.e(TAG, "Lỗi khác khi decode file ảnh: " + note.getImagePath(), e);
                         imageNoteItem.setVisibility(View.GONE);
@@ -172,8 +230,4 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             }
         }
     }
-    // interface NotesListener nên được định nghĩa (nếu chưa có ở file khác)
-    // public interface NotesListener {
-    // void onNoteClicked(Note note, int position);
-    // }
 }
