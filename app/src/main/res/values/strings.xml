@@ -20,5 +20,10 @@
     <string name="note_title">Note Title</string>
     <string name="note_tille">Note Tille</string>
     <string name="format">Format</string>
+    <string name="sort_notes">Sort Notes</string>
+    <string name="sort_by_name_a_z">Sort by Name (A-Z)</string>
+    <string name="sort_by_name_z_a">Sort by Name (Z-A)</string>
+    <string name="sort_by_date_newest_first">Sort by Date (Newest First)</string>
+    <string name="sort_by_date_oldest_first">Sort by Date (Oldest First)</string>
 
 </resources>

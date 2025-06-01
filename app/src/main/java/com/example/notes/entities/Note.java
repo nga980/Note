@@ -9,13 +9,17 @@ import java.io.Serializable;
 
 @Entity(tableName = "notes")
 public class Note implements Serializable {
+
     @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id")
     private int id;
+
     @ColumnInfo(name = "title")
     private String title;
 
+    // Đổi tên biến từ `dateTime` thành `date_time` để khớp với Room schema
     @ColumnInfo(name = "date_time")
-    private String dateTime;
+    private String date_time;
 
     @ColumnInfo(name = "subtitle")
     private String subtitle;
@@ -31,6 +35,8 @@ public class Note implements Serializable {
 
     @ColumnInfo(name = "web_link")
     private String webLink;
+
+    // --- Getter & Setter ---
 
     public int getId() {
         return id;
@@ -48,12 +54,12 @@ public class Note implements Serializable {
         this.title = title;
     }
 
-    public String getDateTime() {
-        return dateTime;
+    public String getDate_time() {
+        return date_time;
     }
 
-    public void setDateTime(String dateTime) {
-        this.dateTime = dateTime;
+    public void setDate_time(String date_time) {
+        this.date_time = date_time;
     }
 
     public String getSubtitle() {
@@ -99,6 +105,6 @@ public class Note implements Serializable {
     @NonNull
     @Override
     public String toString() {
-        return title + " : " + dateTime;
+        return title + " : " + date_time;
     }
 }

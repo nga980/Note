@@ -209,7 +209,7 @@ public class CreateNoteActivity extends AppCompatActivity {
 
         binding.inputNoteTitle.setText(alreadyAvailableNote.getTitle());
         binding.inputNoteSubtitle.setText(alreadyAvailableNote.getSubtitle());
-        binding.textDateTime.setText(alreadyAvailableNote.getDateTime());
+        binding.textDateTime.setText(alreadyAvailableNote.getDate_time());
 
         if (alreadyAvailableNote.getNoteText() != null && !alreadyAvailableNote.getNoteText().trim().isEmpty()) {
             Spanned spannedText = HtmlCompat.fromHtml(alreadyAvailableNote.getNoteText(), HtmlCompat.FROM_HTML_MODE_LEGACY);
@@ -263,7 +263,7 @@ public class CreateNoteActivity extends AppCompatActivity {
         note.setTitle(noteTitle);
         note.setSubtitle(noteSubtitle);
         note.setNoteText(htmlNoteContent);
-        note.setDateTime(noteDateTime);
+        note.setDate_time(noteDateTime);
         note.setColor(selectedNoteColor);
         note.setImagePath(selectedImagePath);
 
