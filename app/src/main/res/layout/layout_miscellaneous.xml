@@ -154,65 +154,105 @@
             android:textSize="@dimen/_13ssp" />
     </LinearLayout>
 
-    <!-- Add Image + Add URL in one row -->
     <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingTop="@dimen/_12sdp"
-        android:gravity="start"
+        android:paddingTop="@dimen/_10sdp"
+        android:paddingBottom="@dimen/_10sdp"
+        android:paddingStart="@dimen/_10sdp"
+        android:paddingEnd="@dimen/_10sdp"
+        android:gravity="center_vertical"
         tools:ignore="DisableBaselineAlignment">
 
-        <!-- Add Image -->
         <LinearLayout
             android:id="@+id/layoutAddImage"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="@dimen/_4sdp"
+            android:background="?attr/selectableItemBackground"
+            tools:ignore="UseCompoundDrawables,NestedWeights">
 
             <ImageView
                 android:layout_width="@dimen/_24sdp"
                 android:layout_height="@dimen/_24sdp"
-                android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_image" />
+                android:src="@drawable/ic_image"
+                app:tint="@color/colorIcons"
+                tools:ignore="ContentDescription" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_marginStart="@dimen/_8sdp"
+                android:layout_marginTop="@dimen/_4sdp"
                 android:text="@string/add_image"
-                android:textColor="@color/colorWhite"
-                android:textSize="@dimen/_12ssp" />
+                android:textColor="@color/colorIcons"
+                android:textSize="@dimen/_10ssp"
+                android:gravity="center_horizontal"/>
         </LinearLayout>
 
-        <!-- Add URL -->
         <LinearLayout
             android:id="@+id/layoutAddUrl"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="horizontal"
-            android:layout_marginStart="@dimen/_8sdp">
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_marginStart="@dimen/_8sdp"
+            android:padding="@dimen/_4sdp"
+            android:background="?attr/selectableItemBackground"
+            tools:ignore="UseCompoundDrawables">
 
             <ImageView
                 android:layout_width="@dimen/_24sdp"
                 android:layout_height="@dimen/_24sdp"
-                android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_web_link" />
+                android:src="@drawable/ic_web_link"
+                app:tint="@color/colorIcons"
+                tools:ignore="ContentDescription" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_marginStart="@dimen/_8sdp"
+                android:layout_marginTop="@dimen/_4sdp"
                 android:text="@string/add_url"
-                android:textColor="@color/colorWhite"
-                android:textSize="@dimen/_12ssp" />
+                android:textColor="@color/colorIcons"
+                android:textSize="@dimen/_10ssp"
+                android:gravity="center_horizontal"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutAddDrawing"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_marginStart="@dimen/_8sdp"
+            android:padding="@dimen/_4sdp"
+            android:background="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="@dimen/_24sdp"
+                android:layout_height="@dimen/_24sdp"
+                android:src="@android:drawable/ic_menu_edit"
+                app:tint="@color/colorIcons"
+                android:contentDescription="@string/add_draw"/> <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_4sdp"
+                android:fontFamily="@font/ubuntu_medium"
+                android:includeFontPadding="false"
+                android:text="@string/add_draw"
+                android:textColor="@color/colorIcons"
+                android:textSize="@dimen/_10ssp"
+                android:gravity="center_horizontal"/>
         </LinearLayout>
     </LinearLayout>
-
 
     <LinearLayout
         android:id="@+id/layoutTextFormatting"

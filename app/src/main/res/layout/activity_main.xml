@@ -19,18 +19,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/imageSortNotes" /> <ImageView
-    android:id="@+id/imageSortNotes"
-    android:layout_width="@dimen/_30sdp"
-    android:layout_height="@dimen/_30sdp"
-    android:layout_marginEnd="@dimen/_12sdp"
-    android:src="@drawable/ic_sort"
-    app:tint="@android:color/white"
-    android:contentDescription="@string/sort_notes"
-    android:padding="@dimen/_4sdp"
-    android:background="?attr/selectableItemBackgroundBorderless"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintTop_toTopOf="@+id/textMyNotes"
-    app:layout_constraintBottom_toBottomOf="@+id/textMyNotes"/>
+        android:id="@+id/imageSortNotes"
+        android:layout_width="@dimen/_30sdp"
+        android:layout_height="@dimen/_30sdp"
+        android:layout_marginEnd="@dimen/_12sdp"
+        android:src="@drawable/ic_sort"
+        app:tint="@android:color/white"
+        android:contentDescription="@string/sort_notes"
+        android:padding="@dimen/_4sdp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/textMyNotes"
+        app:layout_constraintBottom_toBottomOf="@+id/textMyNotes"/>
 
     <LinearLayout
         android:id="@+id/layoutSearch"
@@ -120,6 +120,31 @@
             android:contentDescription="@string/app_name"
             android:src="@drawable/ic_web_link"
             app:tint="@color/colorIcons" />
+
+        <ImageView
+            android:id="@+id/imageAddDrawingQuick"
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_24sdp"
+            android:layout_marginStart="@dimen/_15sdp"
+            android:src="@android:drawable/ic_menu_edit" app:tint="@color/colorIcons"
+            android:contentDescription="@string/add_draw"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/imageGoToTrash"
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_24sdp"
+            android:layout_marginStart="@dimen/_15sdp"
+            android:src="@drawable/ic_delete"
+            app:tint="@color/colorIcons"
+            android:contentDescription="@string/trash_bin"
+            android:padding="@dimen/_2sdp"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
     </LinearLayout>
 
     <ImageView

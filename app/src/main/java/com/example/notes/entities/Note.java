@@ -1,25 +1,21 @@
 package com.example.notes.entities;
 
-import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
-
 import java.io.Serializable;
 
 @Entity(tableName = "notes")
 public class Note implements Serializable {
 
     @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "id")
     private int id;
 
     @ColumnInfo(name = "title")
     private String title;
 
-    // Đổi tên biến từ `dateTime` thành `date_time` để khớp với Room schema
     @ColumnInfo(name = "date_time")
-    private String date_time;
+    private String dateTime;
 
     @ColumnInfo(name = "subtitle")
     private String subtitle;
@@ -36,7 +32,23 @@ public class Note implements Serializable {
     @ColumnInfo(name = "web_link")
     private String webLink;
 
-    // --- Getter & Setter ---
+    @ColumnInfo(name = "is_deleted", defaultValue = "0")
+    private boolean isDeleted;
+
+    @ColumnInfo(name = "deletion_time", defaultValue = "0")
+    private long deletionTime;
+
+    // THÊM TRƯỜNG MỚI CHO BẢN VẼ
+    @ColumnInfo(name = "drawing_path") // Tên cột trong database
+    private String drawingPath;
+
+    public Note() {
+        this.isDeleted = false;
+        this.deletionTime = 0;
+        // drawingPath sẽ là null mặc định
+    }
+
+    // ... (các getter và setter hiện có) ...
 
     public int getId() {
         return id;
@@ -54,12 +66,12 @@ public class Note implements Serializable {
         this.title = title;
     }
 
-    public String getDate_time() {
-        return date_time;
+    public String getDateTime() {
+        return dateTime;
     }
 
-    public void setDate_time(String date_time) {
-        this.date_time = date_time;
+    public void setDateTime(String dateTime) {
+        this.dateTime = dateTime;
     }
 
     public String getSubtitle() {
@@ -102,9 +114,33 @@ public class Note implements Serializable {
         this.webLink = webLink;
     }
 
-    @NonNull
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
+    }
+
+    public long getDeletionTime() {
+        return deletionTime;
+    }
+
+    public void setDeletionTime(long deletionTime) {
+        this.deletionTime = deletionTime;
+    }
+
+    // GETTER VÀ SETTER CHO drawingPath
+    public String getDrawingPath() {
+        return drawingPath;
+    }
+
+    public void setDrawingPath(String drawingPath) {
+        this.drawingPath = drawingPath;
+    }
+
     @Override
     public String toString() {
-        return title + " : " + date_time;
+        return title + " : " + dateTime;
     }
 }

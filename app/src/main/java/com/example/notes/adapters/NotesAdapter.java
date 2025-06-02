@@ -175,8 +175,8 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             }
 
             if (textDateTime != null) {
-                if (note.getDate_time() != null && !note.getDate_time().trim().isEmpty()) {
-                    textDateTime.setText(note.getDate_time());
+                if (note.getDateTime() != null && !note.getDateTime().trim().isEmpty()) {
+                    textDateTime.setText(note.getDateTime());
                     textDateTime.setVisibility(View.VISIBLE);
                 } else {
                     textDateTime.setVisibility(View.GONE);

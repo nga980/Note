@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorDefaultNoteColor"
+    tools:context=".activities.DrawingActivity">
+
+    <LinearLayout
+        android:id="@+id/layoutToolbarDrawing"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/_8sdp"
+        android:paddingEnd="@dimen/_8sdp"
+        android:background="@color/colorPrimary"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:id="@+id/imageDrawingBack"
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:src="@drawable/ic_back"
+            app:tint="@color/colorIcons"
+            android:contentDescription="@string/app_name"
+            android:padding="@dimen/_4sdp"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/draw"
+            android:textColor="@color/colorWhite"
+            android:textSize="@dimen/_16ssp"
+            android:fontFamily="@font/ubuntu_medium"
+            android:layout_marginStart="@dimen/_8sdp"/>
+
+        <ImageView
+            android:id="@+id/imageDrawingSave"
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:src="@drawable/ic_done"
+            app:tint="@color/colorIcons"
+            android:contentDescription="@string/save_drawing"
+            android:padding="@dimen/_4sdp"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
+    </LinearLayout>
+
+    <com.example.notes.viewmodels.DrawingView
+        android:id="@+id/drawingView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:color/white"
+        app:layout_constraintTop_toBottomOf="@id/layoutToolbarDrawing"
+        app:layout_constraintBottom_toTopOf="@id/layoutDrawingTools"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <LinearLayout
+        android:id="@+id/layoutDrawingTools"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="@dimen/_8sdp"
+        android:gravity="center"
+        android:background="@color/colorPrimary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:id="@+id/buttonUndo"
+            android:layout_width="@dimen/_35sdp"
+            android:layout_height="@dimen/_35sdp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:padding="@dimen/_6sdp"
+            app:tint="@color/colorIcons"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginEnd="@dimen/_16sdp"
+            android:contentDescription="@string/undo"/>
+
+        <ImageView
+            android:id="@+id/buttonClearCanvas"
+            android:layout_width="@dimen/_35sdp"
+            android:layout_height="@dimen/_35sdp"
+            android:src="@drawable/ic_delete"
+            android:padding="@dimen/_6sdp"
+            app:tint="@color/colorIcons"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_marginEnd="@dimen/_16sdp"
+            android:contentDescription="@string/delete_all"/>
+
+        <View
+            android:id="@+id/colorPickerBlack"
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:background="@android:color/black"
+            android:layout_marginEnd="@dimen/_8sdp"/>
+        <View
+            android:id="@+id/colorPickerRed"
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:background="@android:color/holo_red_dark"
+            android:layout_marginEnd="@dimen/_8sdp"/>
+        <View
+            android:id="@+id/colorPickerBlue"
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:background="@android:color/holo_blue_dark"/>
+
+    </LinearLayout>
+    <TextView
+        android:id="@+id/textViewDrawingInstructions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/draw_in_white"
+        android:textColor="@color/colorTextHint"
+        app:layout_constraintTop_toTopOf="@id/drawingView"
+        app:layout_constraintBottom_toBottomOf="@id/drawingView"
+        app:layout_constraintStart_toStartOf="@id/drawingView"
+        app:layout_constraintEnd_toEndOf="@id/drawingView"
+        android:visibility="gone"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

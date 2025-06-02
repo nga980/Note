@@ -87,6 +87,11 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
             createOrUpdateNoteLauncher.launch(intent);
         });
 
+        binding.imageAddDrawingQuick.setOnClickListener(v -> {
+            Intent intent = new Intent(getApplicationContext(), CreateNoteActivity.class);
+            intent.putExtra("quick_action_type", "drawing");
+            createOrUpdateNoteLauncher.launch(intent);
+        });
 
         binding.noteRecyclerView.setLayoutManager(
                 new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
@@ -139,6 +144,13 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
 
         // Listener cho nút sắp xếp mới (imageSortNotes từ activity_main.xml)
         binding.imageSortNotes.setOnClickListener(this::showSortMenu);
+
+        // THÊM LISTENER CHO NÚT ĐI ĐẾN THÙNG RÁC
+        binding.imageGoToTrash.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, TrashActivity.class);
+            startActivity(intent);
+            // Bạn không cần ActivityResultLauncher ở đây trừ khi TrashActivity trả về kết quả
+        });
     }
 
     private void showSortMenu(View anchorView) {
