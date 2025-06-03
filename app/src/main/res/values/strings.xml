@@ -76,7 +76,14 @@
     <string name="add_url_description">Add URL to note</string>
     <string name="add_drawing_description">Add drawing to note</string>
     <string name="note_title_cant_be_empty">Note Title Cant Be Empty</string>
-    <string name="are_you_sure_empty_trash_message">Are you sure you want to permanently delete all notes in the trash?</string>
-    <string name="are_you_sure_want_to_delete_this_note_permanently">Are you sure you want to permanently delete all notes in the trash?</string>
+    <string name="are_you_sure_empty_trash_message">
+        Are you sure you want to permanently delete all notes in the trash?</string>
+    <string name="are_you_sure_want_to_delete_this_note_permanently">
+        Are you sure you want to permanently delete all notes in the trash?</string>
+    <string name="trash_bin_emptied">Trash bin emptied successfully.</string>
+    <string name="confirm_permanent_delete_message_with_title">
+        Are you sure you want to permanently delete the note \"%1$s\"?</string>
+    <string name="dialog_message_confirm_permanent_delete">
+        Are you sure you want to permanently delete this note? This action cannot be undone.</string>
 
 </resources>
