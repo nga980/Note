@@ -4,23 +4,21 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.PopupMenu; // THÊM IMPORT NÀY
+import androidx.appcompat.widget.PopupMenu;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences; // THÊM IMPORT NÀY
+import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.preference.PreferenceManager; // THÊM IMPORT NÀY (hoặc androidx.preference.PreferenceManagerCompat)
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Toast;
 
 import com.example.notes.R;
 import com.example.notes.adapters.NotesAdapter;
@@ -30,22 +28,18 @@ import com.example.notes.listeners.NotesListener;
 import com.example.notes.viewmodels.NoteViewModel;
 
 import java.util.ArrayList;
-import java.util.List; // Đảm bảo import này tồn tại
 
 public class MainActivity extends AppCompatActivity implements NotesListener {
 
     private NotesAdapter notesAdapter;
     private NoteViewModel noteViewModel;
-
     private AlertDialog dialogDeleteNote;
     private Note noteToDeleteOnClick;
-
     private ActivityMainBinding binding;
     private ActivityResultLauncher<Intent> createOrUpdateNoteLauncher;
-
+    private ActivityResultLauncher<Intent> trashActivityLauncher;
     private static final String PREF_SORT_ORDER = "pref_sort_order";
     private static final String TAG = "MainActivity";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,16 +50,19 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
         createOrUpdateNoteLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        // Không cần xử lý data.getStringExtra("action_performed") cụ thể ở đây nữa
-                        // vì LiveData sẽ tự động cập nhật danh sách.
-                        // Toast.makeText(MainActivity.this, "Operation successful!", Toast.LENGTH_SHORT).show();
-                        // Logic cuộn có thể vẫn hữu ích nếu bạn thêm note mới và muốn xem nó ngay
-                        if (result.getData() != null && "added".equals(result.getData().getStringExtra("action_performed"))) {
-                            if (notesAdapter.getItemCount() > 0) {
-                                binding.noteRecyclerView.smoothScrollToPosition(0);
-                            }
-                        }
+                    if (result.getResultCode() == RESULT_OK) {
+                        // Ghi chú được tạo/cập nhật thành công, LiveData sẽ tự động cập nhật danh sách
+                        Log.d(TAG, "Note operation successful, LiveData should update the list.");
+                    }
+                });
+
+        trashActivityLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        // Có thể cần làm mới danh sách ghi chú ở đây nếu một ghi chú được khôi phục
+                        // Tuy nhiên, với LiveData, điều này thường được xử lý tự động
+                        Log.d(TAG, "Trash activity returned OK, LiveData should handle updates.");
                     }
                 });
 
@@ -74,13 +71,12 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
             createOrUpdateNoteLauncher.launch(intent);
         });
 
-        // Xử lý Quick Actions
-        binding.imageAddNote.setOnClickListener(v -> binding.imageAddNoteMain.performClick());
         binding.imageAddImage.setOnClickListener(v -> {
             Intent intent = new Intent(getApplicationContext(), CreateNoteActivity.class);
             intent.putExtra("quick_action_type", "image");
             createOrUpdateNoteLauncher.launch(intent);
         });
+
         binding.imageAddWebLink.setOnClickListener(v -> {
             Intent intent = new Intent(getApplicationContext(), CreateNoteActivity.class);
             intent.putExtra("quick_action_type", "url");
@@ -97,59 +93,60 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
                 new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         );
 
-        // Khởi tạo adapter với danh sách rỗng ban đầu
         notesAdapter = new NotesAdapter(new ArrayList<>(), this);
         binding.noteRecyclerView.setAdapter(notesAdapter);
 
         noteViewModel = new ViewModelProvider(this).get(NoteViewModel.class);
 
-        // Tải và áp dụng tùy chọn sắp xếp đã lưu (hoặc mặc định)
-        loadSortPreference(); // Gọi trước khi observe allNotes
+        loadSortPreference(); // Load and apply sort preference
 
         noteViewModel.getAllNotes().observe(this, notes -> {
             if (notes != null) {
                 Log.d(TAG, "Notes received: " + notes.size() + " items. Current sort: " + (noteViewModel.getCurrentSortOrderValue() != null ? noteViewModel.getCurrentSortOrderValue().name() : "null"));
-                notesAdapter.updateNotesList(notes);
-                binding.noteRecyclerView.setVisibility(notes.isEmpty() ? View.GONE : View.VISIBLE);
+                notesAdapter.updateNotesList(notes); // Cập nhật adapter với danh sách đã sắp xếp
+                binding.noteRecyclerView.setVisibility(View.VISIBLE);
+                binding.textNoNotes.setVisibility(notes.isEmpty() ? View.VISIBLE : View.GONE);
 
-                // Áp dụng lại tìm kiếm nếu có
+                // Áp dụng lại tìm kiếm nếu có từ khóa
                 String currentSearchKeyword = binding.inputSearch.getText().toString();
                 if (!currentSearchKeyword.isEmpty()) {
                     notesAdapter.searchNotes(currentSearchKeyword);
                 }
             } else {
-                Log.d(TAG, "Notes received: null");
-                binding.noteRecyclerView.setVisibility(View.GONE);
+                Log.e(TAG, "Notes received: null");
+                binding.noteRecyclerView.setVisibility(View.GONE); // Ẩn RecyclerView nếu danh sách là null
+                binding.textNoNotes.setVisibility(View.VISIBLE); // Hiện thông báo không có ghi chú
             }
         });
 
         binding.inputSearch.addTextChangedListener(new TextWatcher() {
+            private final Handler handler = new Handler(Looper.getMainLooper());
+            private Runnable searchRunnable = () -> {
+                if (notesAdapter != null) { // Kiểm tra null cho notesAdapter
+                    notesAdapter.searchNotes(binding.inputSearch.getText().toString());
+                }
+            };
+            private static final long SEARCH_DELAY = 300;
+
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (notesAdapter != null) { // Kiểm tra null cho notesAdapter
-                    notesAdapter.cancelTimer();
-                }
+                handler.removeCallbacks(searchRunnable);
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (notesAdapter != null) { // Kiểm tra null cho notesAdapter
-                    notesAdapter.searchNotes(s.toString());
-                }
+                handler.postDelayed(searchRunnable, SEARCH_DELAY);
             }
         });
 
-        // Listener cho nút sắp xếp mới (imageSortNotes từ activity_main.xml)
         binding.imageSortNotes.setOnClickListener(this::showSortMenu);
 
-        // THÊM LISTENER CHO NÚT ĐI ĐẾN THÙNG RÁC
         binding.imageGoToTrash.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, TrashActivity.class);
-            startActivity(intent);
-            // Bạn không cần ActivityResultLauncher ở đây trừ khi TrashActivity trả về kết quả
+            trashActivityLauncher.launch(intent);
         });
     }
 
@@ -157,7 +154,6 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
         PopupMenu popupMenu = new PopupMenu(this, anchorView);
         popupMenu.getMenuInflater().inflate(R.menu.sort_options_menu, popupMenu.getMenu());
 
-        // Đánh dấu mục menu hiện tại đang được chọn (tùy chọn)
         NoteViewModel.SortCriteria currentCriteria = noteViewModel.getCurrentSortOrderValue();
         if (currentCriteria != null) {
             if (currentCriteria == NoteViewModel.SortCriteria.TITLE_ASC) {
@@ -171,11 +167,9 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
             }
         }
 
-
         popupMenu.setOnMenuItemClickListener(item -> {
-            NoteViewModel.SortCriteria selectedCriteria = noteViewModel.getCurrentSortOrderValue(); // Giữ lại tiêu chí hiện tại nếu không có gì được chọn
+            NoteViewModel.SortCriteria selectedCriteria = null;
             int itemId = item.getItemId();
-
             if (itemId == R.id.sort_by_name_asc) {
                 selectedCriteria = NoteViewModel.SortCriteria.TITLE_ASC;
             } else if (itemId == R.id.sort_by_name_desc) {
@@ -186,18 +180,21 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
                 selectedCriteria = NoteViewModel.SortCriteria.DATE_MODIFIED_ASC;
             }
 
-            if (selectedCriteria != null) {
-                noteViewModel.setSortOrder(selectedCriteria);
-                saveSortPreference(selectedCriteria);
-                item.setChecked(true); // Đánh dấu mục được chọn
+            if (selectedCriteria != null && selectedCriteria != currentCriteria) {
+                noteViewModel.setSortOrder(selectedCriteria); // Điều này sẽ kích hoạt switchMap và LiveData
+                saveSortPreference(selectedCriteria); // Lưu lựa chọn
+                // Không cần gọi notifyDataSetChanged ở đây vì LiveData sẽ làm điều đó
+                Log.d(TAG, "Sort order changed to: " + selectedCriteria.name());
             }
+            // Không cần thiết lập setChecked(true) ở đây vì menu sẽ đóng lại.
+            // Trạng thái checked sẽ được thiết lập lại khi menu được mở lần sau.
             return true;
         });
         popupMenu.show();
     }
 
     private void saveSortPreference(NoteViewModel.SortCriteria criteria) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences prefs = getSharedPreferences("NotePrefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(PREF_SORT_ORDER, criteria.name());
         editor.apply();
@@ -205,22 +202,20 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
     }
 
     private void loadSortPreference() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        // Mặc định là sắp xếp theo ngày sửa đổi mới nhất nếu chưa có gì được lưu
-        String defaultSortOrderName = NoteViewModel.SortCriteria.DATE_MODIFIED_DESC.name();
-        String sortOrderName = prefs.getString(PREF_SORT_ORDER, defaultSortOrderName);
-        NoteViewModel.SortCriteria criteria;
+        SharedPreferences prefs = getSharedPreferences("NotePrefs", MODE_PRIVATE);
+        String defaultSortOrder = NoteViewModel.SortCriteria.DATE_MODIFIED_DESC.name();
+        String sortOrderName = prefs.getString(PREF_SORT_ORDER, defaultSortOrder);
         try {
-            criteria = NoteViewModel.SortCriteria.valueOf(sortOrderName);
+            NoteViewModel.SortCriteria criteria = NoteViewModel.SortCriteria.valueOf(sortOrderName);
+            noteViewModel.setSortOrder(criteria); // Áp dụng tùy chọn đã lưu
+            Log.d(TAG, "Loaded sort preference: " + criteria.name());
         } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Invalid sort preference found: " + sortOrderName + ", defaulting to " + defaultSortOrderName, e);
-            criteria = NoteViewModel.SortCriteria.DATE_MODIFIED_DESC; // Mặc định an toàn
-            saveSortPreference(criteria); // Lưu lại giá trị mặc định nếu giá trị cũ bị lỗi
+            Log.e(TAG, "Invalid sort preference: " + sortOrderName + ", defaulting to " + defaultSortOrder, e);
+            NoteViewModel.SortCriteria criteria = NoteViewModel.SortCriteria.DATE_MODIFIED_DESC;
+            noteViewModel.setSortOrder(criteria); // Đặt lại về mặc định nếu có lỗi
+            saveSortPreference(criteria); // Và lưu lại giá trị mặc định này
         }
-        noteViewModel.setSortOrder(criteria);
-        Log.d(TAG, "Loaded sort preference: " + criteria.name());
     }
-
 
     @Override
     public void onNoteClicked(Note note, int position) {
@@ -239,10 +234,7 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
     private void showDeleteNoteDialog() {
         if (dialogDeleteNote == null) {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            View view = LayoutInflater.from(this).inflate(
-                    R.layout.layout_delete_note,
-                    null
-            );
+            View view = LayoutInflater.from(this).inflate(R.layout.layout_delete_note, null);
             builder.setView(view);
             dialogDeleteNote = builder.create();
             if (dialogDeleteNote.getWindow() != null) {
@@ -250,19 +242,23 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
             }
             view.findViewById(R.id.textDeleteNote).setOnClickListener(v -> {
                 if (noteToDeleteOnClick != null) {
-                    noteViewModel.delete(noteToDeleteOnClick);
-                    // Toast đã bị comment ở bản gốc, LiveData sẽ tự cập nhật UI
+                    noteViewModel.delete(noteToDeleteOnClick); // Sẽ di chuyển vào thùng rác
+                    Log.d(TAG, "Note moved to trash: " + noteToDeleteOnClick.getTitle());
+                    noteToDeleteOnClick = null; // Đặt lại để tránh xóa nhầm
                 }
                 if (dialogDeleteNote != null && dialogDeleteNote.isShowing()) {
                     dialogDeleteNote.dismiss();
                 }
             });
             view.findViewById(R.id.textCancel).setOnClickListener(v -> {
+                noteToDeleteOnClick = null; // Đặt lại nếu hủy
                 if (dialogDeleteNote != null && dialogDeleteNote.isShowing()) {
                     dialogDeleteNote.dismiss();
                 }
             });
         }
+        // Đảm bảo dialog hiển thị đúng ghi chú nếu nó được tái sử dụng
+        // (Mặc dù trong trường hợp này, nó có thể không cần thiết vì noteToDeleteOnClick được cập nhật mỗi lần)
         dialogDeleteNote.show();
     }
 }

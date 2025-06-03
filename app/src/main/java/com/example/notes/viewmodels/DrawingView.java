@@ -15,13 +15,25 @@ import java.util.List;
 
 public class DrawingView extends View {
 
-    private Path currentPath;
-    private Paint currentPaint;
-    private List<Path> paths = new ArrayList<>();
-    private List<Paint> paints = new ArrayList<>(); // Lưu trữ Paint cho mỗi Path
+    private Path currentDrawingPath; // Đổi tên để rõ ràng hơn
+    private Paint currentDrawingPaint; // Bút vẽ cho nét hiện tại
+
+    // Danh sách để lưu các nét vẽ đã hoàn thành và thuộc tính của chúng
+    private List<CompletedPath> completedPaths = new ArrayList<>();
 
     private int currentColor = Color.BLACK;
-    private float currentStrokeWidth = 8f; // Độ dày nét vẽ mặc định
+    private float currentStrokeWidth = 8f;
+
+    // Lớp nội bộ để lưu một Path đã hoàn thành cùng với Paint của nó
+    private static class CompletedPath {
+        Path path;
+        Paint paint;
+
+        CompletedPath(Path path, Paint paint) {
+            this.path = path; // Lưu một bản sao của Path
+            this.paint = new Paint(paint); // Lưu một bản sao của Paint
+        }
+    }
 
     public DrawingView(Context context) {
         this(context, null);
@@ -33,72 +45,65 @@ public class DrawingView extends View {
     }
 
     private void init() {
-        currentPath = new Path();
-        currentPaint = new Paint();
-        currentPaint.setAntiAlias(true);
-        currentPaint.setColor(currentColor);
-        currentPaint.setStyle(Paint.Style.STROKE);
-        currentPaint.setStrokeJoin(Paint.Join.ROUND);
-        currentPaint.setStrokeCap(Paint.Cap.ROUND);
-        currentPaint.setStrokeWidth(currentStrokeWidth);
+        // currentDrawingPath và currentDrawingPaint sẽ được khởi tạo khi bắt đầu vẽ (ACTION_DOWN)
     }
 
     public void setCurrentColor(int color) {
         currentColor = color;
-        // Tạo một Paint mới cho nét vẽ tiếp theo nếu muốn mỗi nét có màu riêng
-        // Hoặc cập nhật currentPaint nếu muốn tất cả các nét sau này có màu mới
-        currentPaint.setColor(currentColor);
+        // Nếu đang vẽ dở, currentDrawingPaint sẽ được cập nhật.
+        // Nếu không, màu này sẽ được dùng cho nét vẽ tiếp theo.
+        if (currentDrawingPaint != null) {
+            currentDrawingPaint.setColor(currentColor);
+        }
     }
 
     public void setStrokeWidth(float width) {
         currentStrokeWidth = width;
-        currentPaint.setStrokeWidth(currentStrokeWidth);
+        if (currentDrawingPaint != null) {
+            currentDrawingPaint.setStrokeWidth(currentStrokeWidth);
+        }
     }
 
     public void undo() {
-        if (!paths.isEmpty()) {
-            paths.remove(paths.size() - 1);
-            paints.remove(paints.size() - 1);
-            invalidate(); // Vẽ lại view
+        if (!completedPaths.isEmpty()) {
+            completedPaths.remove(completedPaths.size() - 1);
+            invalidate();
         }
     }
 
     public void clearCanvas() {
-        paths.clear();
-        paints.clear();
-        currentPath.reset(); // Xóa cả đường dẫn đang vẽ dở
+        completedPaths.clear();
+        if (currentDrawingPath != null) {
+            currentDrawingPath.reset(); // Xóa cả đường dẫn đang vẽ dở nếu có
+        }
         invalidate();
     }
 
     public Bitmap getBitmap() {
-        // Tạo Bitmap với kích thước của View
         Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
-        // Vẽ nền trắng cho bitmap (tùy chọn, nếu không bản vẽ sẽ có nền trong suốt)
-        canvas.drawColor(Color.WHITE);
-        // Vẽ lại tất cả các path đã lưu lên canvas của bitmap
-        for (int i = 0; i < paths.size(); i++) {
-            canvas.drawPath(paths.get(i), paints.get(i));
+        canvas.drawColor(Color.WHITE); // Nền trắng cho bitmap
+        for (CompletedPath cp : completedPaths) {
+            canvas.drawPath(cp.path, cp.paint);
         }
-        // Vẽ cả path hiện tại nếu có (mặc dù thường là đã được add vào paths khi ACTION_UP)
-        // canvas.drawPath(currentPath, currentPaint); // Cân nhắc nếu cần
+        // Không cần vẽ currentDrawingPath ở đây vì nó chưa hoàn thành (chưa ACTION_UP)
         return bitmap;
     }
 
     public boolean hasDrawing() {
-        return !paths.isEmpty();
+        return !completedPaths.isEmpty();
     }
-
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        // Vẽ các đường đã hoàn thành
-        for (int i = 0; i < paths.size(); i++) {
-            canvas.drawPath(paths.get(i), paints.get(i));
+        for (CompletedPath cp : completedPaths) {
+            canvas.drawPath(cp.path, cp.paint);
         }
-        // Vẽ đường hiện tại đang được tay người dùng kéo
-        canvas.drawPath(currentPath, currentPaint);
+        // Vẽ nét hiện tại đang được người dùng kéo (nếu có)
+        if (currentDrawingPath != null && currentDrawingPaint != null) {
+            canvas.drawPath(currentDrawingPath, currentDrawingPaint);
+        }
     }
 
     @Override
@@ -108,27 +113,40 @@ public class DrawingView extends View {
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                currentPath.reset(); // Bắt đầu một đường mới
-                currentPath.moveTo(touchX, touchY);
-                // Tạo một Paint object mới cho path này, dựa trên cài đặt hiện tại
-                Paint newPaint = new Paint(currentPaint); // Sao chép cài đặt hiện tại
-                paints.add(newPaint);
-                paths.add(currentPath); // Thêm path hiện tại vào danh sách để nó được vẽ ngay
+                currentDrawingPath = new Path(); // Tạo Path MỚI cho mỗi nét vẽ
+                currentDrawingPath.moveTo(touchX, touchY);
+
+                currentDrawingPaint = new Paint(); // Tạo Paint MỚI cho nét vẽ này
+                currentDrawingPaint.setAntiAlias(true);
+                currentDrawingPaint.setColor(currentColor); // Lấy màu hiện tại
+                currentDrawingPaint.setStyle(Paint.Style.STROKE);
+                currentDrawingPaint.setStrokeJoin(Paint.Join.ROUND);
+                currentDrawingPaint.setStrokeCap(Paint.Cap.ROUND);
+                currentDrawingPaint.setStrokeWidth(currentStrokeWidth); // Lấy độ dày nét hiện tại
+                // Không thêm vào completedPaths ngay, chỉ thêm khi ACTION_UP
+                invalidate(); // Yêu cầu vẽ lại để thấy điểm bắt đầu
                 return true;
 
             case MotionEvent.ACTION_MOVE:
-                currentPath.lineTo(touchX, touchY);
+                if (currentDrawingPath != null) {
+                    currentDrawingPath.lineTo(touchX, touchY);
+                }
                 break;
 
             case MotionEvent.ACTION_UP:
-                // Path đã được thêm vào paths ở ACTION_DOWN
-                // currentPath sẽ được reset ở ACTION_DOWN tiếp theo
+                if (currentDrawingPath != null && currentDrawingPaint != null) {
+                    // Khi nhấc tay lên, lưu nét vẽ hiện tại vào danh sách các nét đã hoàn thành
+                    // Quan trọng: tạo một đối tượng Path mới để lưu trữ, không phải tham chiếu đến currentDrawingPath
+                    completedPaths.add(new CompletedPath(new Path(currentDrawingPath), currentDrawingPaint));
+                    currentDrawingPath.reset(); // Sẵn sàng cho nét vẽ tiếp theo (hoặc có thể reset ở ACTION_DOWN)
+                    // Hoặc đặt currentDrawingPath = null; currentDrawingPaint = null; để chỉ vẽ khi chạm xuống
+                }
                 break;
 
             default:
                 return false;
         }
-        invalidate(); // Yêu cầu View vẽ lại
+        invalidate();
         return true;
     }
 }

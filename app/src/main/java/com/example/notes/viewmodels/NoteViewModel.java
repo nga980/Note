@@ -1,43 +1,34 @@
 package com.example.notes.viewmodels;
 
 import android.app.Application;
-import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
-
 import com.example.notes.entities.Note;
 import com.example.notes.repositories.NoteRepository;
-
 import java.util.List;
 
 public class NoteViewModel extends AndroidViewModel {
-    private NoteRepository repository;
-    private LiveData<List<Note>> allNotes;
-
     public enum SortCriteria {
-        DATE_MODIFIED_DESC,
-        DATE_MODIFIED_ASC,
-        TITLE_ASC,
-        TITLE_DESC
+        TITLE_ASC, TITLE_DESC, DATE_MODIFIED_DESC, DATE_MODIFIED_ASC
     }
 
-    private MutableLiveData<SortCriteria> currentSortOrder = new MutableLiveData<>();
+    private NoteRepository repository;
+    private MutableLiveData<SortCriteria> currentSortOrderLiveData = new MutableLiveData<>();
+    private LiveData<List<Note>> allNotes;
 
-    public NoteViewModel(@NonNull Application application) {
+    public NoteViewModel(Application application) {
         super(application);
         repository = new NoteRepository(application);
+        // Đặt thứ tự sắp xếp mặc định. MainActivity sẽ tải tùy chọn của người dùng và có thể ghi đè giá trị này.
+        currentSortOrderLiveData.setValue(SortCriteria.DATE_MODIFIED_DESC);
 
-        if (currentSortOrder.getValue() == null) {
-            currentSortOrder.setValue(SortCriteria.DATE_MODIFIED_DESC);
-        }
-
-        allNotes = Transformations.switchMap(currentSortOrder, sortCriteria -> {
-            if (sortCriteria == null) {
+        allNotes = Transformations.switchMap(currentSortOrderLiveData, criteria -> {
+            if (criteria == null) { // Lý tưởng nhất là không xảy ra nếu giá trị mặc định được đặt
                 return repository.getAllNotesSortedByDateModifiedDesc();
             }
-            switch (sortCriteria) {
+            switch (criteria) {
                 case TITLE_ASC:
                     return repository.getAllNotesSortedByTitleAsc();
                 case TITLE_DESC:
@@ -52,35 +43,26 @@ public class NoteViewModel extends AndroidViewModel {
     }
 
     public LiveData<List<Note>> getAllNotes() {
-        return allNotes; // LiveData này đã tự động lọc is_deleted = 0 từ Repository/DAO
-    }
-
-    public void setSortOrder(SortCriteria sortCriteria) {
-        currentSortOrder.setValue(sortCriteria);
+        return allNotes;
     }
 
     public SortCriteria getCurrentSortOrderValue() {
-        return currentSortOrder.getValue();
+        return currentSortOrderLiveData.getValue();
+    }
+
+    public void setSortOrder(SortCriteria criteria) {
+        currentSortOrderLiveData.setValue(criteria);
+    }
+
+    public void delete(Note note) {
+        repository.delete(note); // Lệnh này gọi moveToTrash trong repository
     }
 
     public void insert(Note note) {
         repository.insert(note);
     }
 
-    /**
-     * Phương thức này giờ sẽ di chuyển ghi chú vào thùng rác,
-     * vì repository.delete() đã được cập nhật để gọi moveToTrash().
-     */
-    public void delete(Note note) {
-        repository.delete(note); // repository.delete() thực chất là moveToTrash()
-    }
-
     public void update(Note note) {
         repository.update(note);
-    }
-
-    public LiveData<Note> getNoteById(int noteId) {
-        // Repository.getNoteById() cũng nên chỉ trả về note active
-        return repository.getNoteById(noteId);
     }
 }

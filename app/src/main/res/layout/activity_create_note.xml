@@ -179,27 +179,6 @@
                     android:visibility="gone"/>
             </FrameLayout>
 
-            <TextView
-                android:id="@+id/textDrawingPlaceholder"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:minHeight="@dimen/_48sdp"
-                android:text="@string/tap_to_add_drawing"
-                android:textColor="@color/colorTextHint"
-                android:textSize="@dimen/_13ssp"
-                android:fontFamily="@font/ubuntu_regular"
-                android:gravity="center"
-                android:visibility="gone"
-                android:background="?attr/selectableItemBackground"
-                android:padding="@dimen/_8sdp"
-                android:layout_marginStart="@dimen/_12sdp"
-                android:layout_marginEnd="@dimen/_12sdp"
-                android:layout_marginTop="@dimen/_8sdp"
-                app:layout_constraintTop_toBottomOf="@id/frameLayoutDrawing"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
-
-
             <LinearLayout
                 android:id="@+id/layoutWebURL"
                 android:layout_width="0dp"
@@ -211,7 +190,7 @@
                 android:orientation="horizontal"
                 android:padding="@dimen/_8sdp"
                 android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/textDrawingPlaceholder"
+                app:layout_constraintTop_toBottomOf="@id/frameLayoutDrawing"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 

@@ -2,10 +2,11 @@ package com.example.notes.entities;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index; // Thêm import này
 import androidx.room.PrimaryKey;
 import java.io.Serializable;
 
-@Entity(tableName = "notes")
+@Entity(tableName = "notes", indices = {@Index(value = {"timestamp"})}) // Thêm index cho timestamp
 public class Note implements Serializable {
 
     @PrimaryKey(autoGenerate = true)
@@ -14,7 +15,7 @@ public class Note implements Serializable {
     @ColumnInfo(name = "title")
     private String title;
 
-    @ColumnInfo(name = "date_time")
+    @ColumnInfo(name = "date_time") // Chuỗi ngày tháng để hiển thị
     private String dateTime;
 
     @ColumnInfo(name = "subtitle")
@@ -38,14 +39,18 @@ public class Note implements Serializable {
     @ColumnInfo(name = "deletion_time", defaultValue = "0")
     private long deletionTime;
 
-    // THÊM TRƯỜNG MỚI CHO BẢN VẼ
-    @ColumnInfo(name = "drawing_path") // Tên cột trong database
+    @ColumnInfo(name = "drawing_path")
     private String drawingPath;
+
+    // Trường mới để lưu dấu thời gian (timestamp) cho việc sắp xếp
+    @ColumnInfo(name = "timestamp")
+    private long timestamp;
+
 
     public Note() {
         this.isDeleted = false;
         this.deletionTime = 0;
-        // drawingPath sẽ là null mặc định
+        this.timestamp = System.currentTimeMillis(); // Giá trị mặc định khi tạo mới
     }
 
     // ... (các getter và setter hiện có) ...
@@ -130,13 +135,21 @@ public class Note implements Serializable {
         this.deletionTime = deletionTime;
     }
 
-    // GETTER VÀ SETTER CHO drawingPath
     public String getDrawingPath() {
         return drawingPath;
     }
 
     public void setDrawingPath(String drawingPath) {
         this.drawingPath = drawingPath;
+    }
+
+    // Getter và Setter cho timestamp
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     @Override

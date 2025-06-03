@@ -1,8 +1,8 @@
 package com.example.notes.activities;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -30,6 +30,7 @@ import com.example.notes.viewmodels.DrawingView;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -40,14 +41,11 @@ public class DrawActivity extends AppCompatActivity {
 
     private static final String TAG = "DrawingActivity";
     public static final String EXTRA_DRAWING_PATH = "extra_drawing_path";
-    // Bỏ REQUEST_CODE_WRITE_STORAGE_PERMISSION vì sẽ dùng ActivityResultLauncher
 
     private ActivityDrawingBinding binding;
     private DrawingView drawingView;
-
-    // ActivityResultLauncher để xin quyền
     private ActivityResultLauncher<String> requestWritePermissionLauncher;
-
+    private OnBackPressedCallback onBackPressedCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,22 +55,23 @@ public class DrawActivity extends AppCompatActivity {
 
         drawingView = binding.drawingView;
 
-        // Khởi tạo requestWritePermissionLauncher
         requestWritePermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 isGranted -> {
                     if (isGranted) {
-                        actuallySaveDrawing(); // Quyền đã được cấp, tiến hành lưu
+                        Log.d(TAG, "Write permission granted. Calling actuallySaveDrawing.");
+                        actuallySaveDrawing();
                     } else {
-                        Toast.makeText(this, "Cần quyền ghi để lưu bản vẽ.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, R.string.permission_needed_to_save_drawing, Toast.LENGTH_LONG).show();
                         setResult(RESULT_CANCELED);
-                        // Không finish() ở đây để người dùng có thể thử lại hoặc thoát
+                        finish(); // <-- SỬA LỖI: Thêm finish() khi quyền bị từ chối
                     }
                 });
 
         setupDrawingTools();
         setupActionButtons();
         toggleDrawingInstructions();
+        setupOnBackPressedHandling();
     }
 
     private void setupDrawingTools() {
@@ -89,39 +88,32 @@ public class DrawActivity extends AppCompatActivity {
         });
         binding.buttonClearCanvas.setOnClickListener(v -> {
             new AlertDialog.Builder(this)
-                    .setTitle(R.string.clear_drawing_title) // Sử dụng string resource
-                    .setMessage(R.string.confirm_clear_drawing) // Sử dụng string resource
+                    .setTitle(R.string.clear_drawing_title)
+                    .setMessage(R.string.confirm_clear_drawing)
                     .setPositiveButton(android.R.string.yes, (dialog, which) -> {
                         drawingView.clearCanvas();
                         toggleDrawingInstructions();
                     })
                     .setNegativeButton(android.R.string.no, null)
+                    .setIcon(R.drawable.ic_delete)
                     .show();
         });
     }
-    // Thêm các string resource: clear_drawing_title, confirm_clear_drawing
 
     private void setupActionButtons() {
-        binding.imageDrawingBack.setOnClickListener(v -> {
-            if (drawingView.hasDrawing()) {
-                showUnsavedChangesDialog();
-            } else {
-                setResult(RESULT_CANCELED);
-                finish();
-            }
-        });
+        binding.imageDrawingBack.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
 
         binding.imageDrawingSave.setOnClickListener(v -> {
+            Log.d(TAG, "Save button clicked."); // Log để kiểm tra
             if (drawingView.hasDrawing()) {
+                Log.d(TAG, "Drawing found, proceeding to saveDrawingAndFinish.");
                 saveDrawingAndFinish();
             } else {
-                Toast.makeText(this, R.string.nothing_to_save, Toast.LENGTH_SHORT).show(); // Sử dụng string resource
-                setResult(RESULT_CANCELED);
-                finish();
+                Log.w(TAG, "No drawing to save.");
+                Toast.makeText(this, R.string.nothing_to_save, Toast.LENGTH_SHORT).show();
             }
         });
     }
-    // Thêm string resource: nothing_to_save
 
     private void toggleDrawingInstructions() {
         if (binding.textViewDrawingInstructions != null) {
@@ -130,36 +122,36 @@ public class DrawActivity extends AppCompatActivity {
     }
 
     private void saveDrawingAndFinish() {
-        // Với Android 10 (API 29) trở lên, không cần xin quyền WRITE_EXTERNAL_STORAGE
-        // để ghi vào MediaStore hoặc thư mục dành riêng cho ứng dụng.
-        // Với Android < 10, nếu ghi vào bộ nhớ ngoài công cộng, chúng ta cần quyền.
+        if (!drawingView.hasDrawing()) {
+            Toast.makeText(this, R.string.nothing_to_save, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
-                // Xin quyền bằng ActivityResultLauncher
+                Log.d(TAG, "Requesting WRITE_EXTERNAL_STORAGE permission for pre-Q device.");
                 requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-                return; // Việc lưu sẽ được xử lý sau khi có kết quả quyền
+                return; // Chờ kết quả của yêu cầu quyền
             }
         }
-        // Nếu quyền đã được cấp (cho < Q) hoặc không cần quyền (>= Q)
+        Log.d(TAG, "Proceeding with actuallySaveDrawing.");
         actuallySaveDrawing();
     }
 
     private void actuallySaveDrawing() {
         Bitmap bitmap = drawingView.getBitmap();
-        if (bitmap == null) {
-            Toast.makeText(this, R.string.error_creating_drawing_bitmap, Toast.LENGTH_SHORT).show(); // Sử dụng string resource
+        if (bitmap == null || bitmap.isRecycled() || bitmap.getWidth() == 0 || bitmap.getHeight() == 0) {
+            Toast.makeText(this, R.string.error_creating_drawing_bitmap, Toast.LENGTH_SHORT).show();
             setResult(RESULT_CANCELED);
-            finish();
+            finish(); // <-- SỬA LỖI: Thêm finish() khi bitmap không hợp lệ
             return;
         }
 
         String fileName = "NoteDrawing_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + "_" + UUID.randomUUID().toString().substring(0, 6) + ".png";
-        String savedPath = null; // Sẽ lưu Uri.toString() hoặc đường dẫn file tuyệt đối
-
-        OutputStream fos = null;
-        Uri imageUri = null;
-        File imageFileForBelowQ = null;
+        String savedPath = null;
+        Uri imageUriForQ = null;
+        boolean saveSucceeded = false;
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -167,110 +159,138 @@ public class DrawActivity extends AppCompatActivity {
                 ContentValues contentValues = new ContentValues();
                 contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
                 contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/png");
-                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "MyNotesDrawings");
+                // Sử dụng tên thư mục đã dịch nếu có, hoặc tên tiếng Anh từ strings.xml
+                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + getString(R.string.app_drawing_folder_name));
 
-                imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-                if (imageUri != null) {
-                    fos = resolver.openOutputStream(imageUri);
-                    savedPath = imageUri.toString(); // Lưu Uri dưới dạng string
+                imageUriForQ = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+                if (imageUriForQ != null) {
+                    try (OutputStream fos = resolver.openOutputStream(imageUriForQ)) {
+                        if (fos != null) {
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
+                            fos.flush();
+                            Log.d(TAG, "Drawing saved to MediaStore: " + imageUriForQ.toString());
+
+                            // Sao chép vào thư mục nội bộ để có đường dẫn ổn định
+                            File internalAppDir = new File(getFilesDir(), getString(R.string.app_drawing_folder_name_cache));
+                            if (!internalAppDir.exists() && !internalAppDir.mkdirs()) {
+                                throw new IOException("Failed to create internal directory: " + internalAppDir.getAbsolutePath());
+                            }
+                            File internalFile = new File(internalAppDir, fileName);
+                            try (InputStream inputStream = resolver.openInputStream(imageUriForQ);
+                                 FileOutputStream internalFos = new FileOutputStream(internalFile)) {
+                                byte[] buffer = new byte[1024];
+                                int bytesRead;
+                                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                                    internalFos.write(buffer, 0, bytesRead);
+                                }
+                                savedPath = internalFile.getAbsolutePath();
+                                saveSucceeded = true;
+                                Log.d(TAG, "Drawing copied to internal path: " + savedPath);
+                            }
+                        } else {
+                            throw new IOException(getString(R.string.error_opening_outputstream));
+                        }
+                    }
                 } else {
-                    throw new IOException("Không thể tạo MediaStore entry.");
+                    throw new IOException(getString(R.string.error_creating_mediastore_entry));
                 }
-            } else {
-                // Lưu vào thư mục public Pictures cho Android < Q
-                // Hoặc thư mục internal của ứng dụng nếu muốn an toàn hơn và không cần quyền
-                File storageDir = new File(Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_PICTURES), "MyNotesDrawings");
+            } else { // Pre-Q
+                File storageDir;
+                File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+                storageDir = new File(picturesDir, getString(R.string.app_drawing_folder_name));
 
                 if (!storageDir.exists() && !storageDir.mkdirs()) {
-                    Log.e(TAG, "Không thể tạo thư mục: " + storageDir.getAbsolutePath());
-                    // Thay thế: Lưu vào thư mục cache nội bộ của ứng dụng
-                    storageDir = new File(getCacheDir(), "MyNotesDrawings");
-                    if (!storageDir.exists()) storageDir.mkdirs(); // Thử tạo lại
+                    Log.w(TAG, "Cannot create public directory, falling back to internal: " + storageDir.getAbsolutePath());
+                    storageDir = new File(getFilesDir(), getString(R.string.app_drawing_folder_name_cache));
+                    if (!storageDir.exists() && !storageDir.mkdirs()) {
+                        throw new IOException(getString(R.string.error_creating_directory) + ": " + storageDir.getAbsolutePath());
+                    }
                 }
-                imageFileForBelowQ = new File(storageDir, fileName);
-                fos = new FileOutputStream(imageFileForBelowQ);
-                savedPath = imageFileForBelowQ.getAbsolutePath();
+
+                File imageFile = new File(storageDir, fileName);
+                try (FileOutputStream fos = new FileOutputStream(imageFile)) {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
+                    fos.flush();
+                    savedPath = imageFile.getAbsolutePath();
+                    saveSucceeded = true;
+                    Log.d(TAG, "Drawing saved to (Pre-Q): " + savedPath);
+
+                    // Chỉ quét media nếu lưu vào thư mục public và có thể truy cập
+                    if (imageFile.canRead() && Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED) && savedPath.contains(picturesDir.getAbsolutePath())) {
+                        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                        mediaScanIntent.setData(Uri.fromFile(imageFile));
+                        sendBroadcast(mediaScanIntent);
+                    }
+                }
             }
 
-            if (fos != null) {
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                Toast.makeText(this, R.string.drawing_saved, Toast.LENGTH_SHORT).show(); // Sử dụng string resource
-
+            if (saveSucceeded && savedPath != null) {
+                Toast.makeText(this, R.string.drawing_saved_successfully, Toast.LENGTH_SHORT).show();
                 Intent resultIntent = new Intent();
                 resultIntent.putExtra(EXTRA_DRAWING_PATH, savedPath);
                 setResult(RESULT_OK, resultIntent);
-            } else {
-                throw new IOException("Không thể mở OutputStream để lưu ảnh.");
+                finish();
+            } else if (!saveSucceeded) { // Nếu saveSucceeded vẫn là false
+                throw new IOException("Saving failed, path not set.");
             }
 
         } catch (IOException e) {
-            Log.e(TAG, "Lỗi khi lưu bản vẽ: " + e.getMessage(), e);
-            Toast.makeText(this, getString(R.string.error_saving_drawing) + ": " + e.getMessage(), Toast.LENGTH_LONG).show(); // Sử dụng string resource
+            Log.e(TAG, "Error saving drawing: " + e.getMessage(), e);
+            Toast.makeText(this, getString(R.string.error_saving_drawing) + ": " + (e.getMessage() != null ? e.getMessage() : "Unknown IO error"), Toast.LENGTH_LONG).show();
             setResult(RESULT_CANCELED);
-            // Nếu có lỗi, xóa entry MediaStore (nếu đã tạo)
-            if (imageUri != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (imageUriForQ != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 try {
-                    getContentResolver().delete(imageUri, null, null);
+                    getContentResolver().delete(imageUriForQ, null, null);
                 } catch (Exception ex) {
-                    Log.e(TAG, "Lỗi khi xóa MediaStore entry không thành công: " + ex.getMessage());
+                    Log.e(TAG, "Error deleting MediaStore entry on failure: " + ex.getMessage());
                 }
             }
-        } finally {
-            if (fos != null) {
-                try {
-                    fos.close();
-                } catch (IOException e) {
-                    Log.e(TAG, "Lỗi khi đóng FileOutputStream: " + e.getMessage());
-                }
-            }
-            // Chỉ quét file nếu lưu vào bộ nhớ ngoài cho Android < Q và không dùng MediaStore
-            if (imageFileForBelowQ != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && imageFileForBelowQ.exists()) {
-                Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                mediaScanIntent.setData(Uri.fromFile(imageFileForBelowQ));
-                sendBroadcast(mediaScanIntent);
-            }
-            finish();
+            finish(); // <-- SỬA LỖI: Thêm finish() khi có IOException
+        } catch (Exception e) { // Bắt các lỗi không mong muốn khác
+            Log.e(TAG, "Unexpected error saving drawing: " + e.getMessage(), e);
+            Toast.makeText(this, getString(R.string.error_saving_drawing) + ": " + (e.getMessage() != null ? e.getMessage() : "Unexpected error"), Toast.LENGTH_LONG).show();
+            setResult(RESULT_CANCELED);
+            finish(); // <-- SỬA LỖI: Thêm finish() khi có lỗi khác
         }
     }
-    // Thêm string resource: error_creating_drawing_bitmap, drawing_saved, error_saving_drawing
 
 
-    // Bỏ qua onRequestPermissionsResult vì đã dùng ActivityResultLauncher
-    // @Override
-    // public void onRequestPermissionsResult(...)
-
-    private void showUnsavedChangesDialog() {
+    private void showUnsavedChangesDialog(final OnBackPressedCallback callback) {
         new AlertDialog.Builder(this)
-                .setTitle(R.string.unsaved_drawing_title) // Sử dụng string resource
-                .setMessage(R.string.confirm_save_drawing) // Sử dụng string resource
-                .setPositiveButton(R.string.save, (dialog, which) -> saveDrawingAndFinish()) // Sử dụng string resource
-                .setNegativeButton(R.string.discard_drawing, (dialog, which) -> { // Sử dụng string resource
+                .setTitle(R.string.unsaved_drawing_title)
+                .setMessage(R.string.confirm_save_drawing)
+                .setPositiveButton(R.string.save, (dialog, which) -> saveDrawingAndFinish())
+                .setNegativeButton(R.string.discard_drawing, (dialog, which) -> {
                     setResult(RESULT_CANCELED);
-                    finish();
+                    callback.setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
                 })
-                .setNeutralButton(R.string.cancel, null) // Sử dụng string resource
+                .setNeutralButton(R.string.cancel, null)
+                .setCancelable(false)
                 .show();
     }
-    // Thêm string resource: unsaved_drawing_title, confirm_save_drawing, save, discard_drawing, cancel
 
-    // Phương thức getPathFromUri không còn thực sự cần thiết nếu bạn làm việc với Uri
-    // và chỉ trả về Uri.toString() hoặc đường dẫn bạn đã tạo.
-    // Nếu CreateNoteActivity cần path tuyệt đối, nó có thể thử tự chuyển đổi từ Uri nếu cần,
-    // nhưng tốt nhất là CreateNoteActivity cũng làm việc với Uri.
-    // Tạm thời bỏ phương thức này để khuyến khích làm việc với Uri.
-    /*
-    private String getPathFromUri(Uri contentUri) { ... }
-    */
-
+    private void setupOnBackPressedHandling() {
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawingView.hasDrawing()) {
+                    showUnsavedChangesDialog(this);
+                } else {
+                    setResult(RESULT_CANCELED);
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, onBackPressedCallback);
+    }
 
     @Override
-    public void onBackPressed() { // Sử dụng onBackPressed() đã được un-deprecated
-        if (drawingView.hasDrawing()) {
-            showUnsavedChangesDialog();
-        } else {
-            setResult(RESULT_CANCELED);
-            super.onBackPressed(); // Gọi super để xử lý back mặc định
+    protected void onDestroy() {
+        super.onDestroy();
+        if (onBackPressedCallback != null) {
+            onBackPressedCallback.remove();
         }
     }
 }
