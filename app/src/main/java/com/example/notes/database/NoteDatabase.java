@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-@Database(entities = {Note.class}, version = 4, exportSchema = false) // Đảm bảo version là 4 (hoặc version mới nhất của bạn)
+@Database(entities = {Note.class}, version = 5, exportSchema = false) // <<< TĂNG VERSION LÊN 5
 public abstract class NoteDatabase extends RoomDatabase {
 
     private static volatile NoteDatabase noteDatabase;
@@ -31,7 +31,7 @@ public abstract class NoteDatabase extends RoomDatabase {
                 if (noteDatabase == null) {
                     noteDatabase = Room.databaseBuilder(context.getApplicationContext(),
                                     NoteDatabase.class, "notes_db")
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4) // Đảm bảo MIGRATION_3_4 được thêm vào
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5) // <<< THÊM MIGRATION_4_5
                             .build();
                 }
             }
@@ -60,26 +60,19 @@ public abstract class NoteDatabase extends RoomDatabase {
         }
     };
 
-    // MIGRATION TỪ VERSION 3 SANG 4 (ĐÃ SỬA)
     static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             Log.i(TAG_MIGRATION, "Running MIGRATION_3_4");
-            // Thêm cột timestamp
             database.execSQL("ALTER TABLE notes ADD COLUMN timestamp INTEGER NOT NULL DEFAULT 0");
             Log.d(TAG_MIGRATION, "Added timestamp column to notes table.");
-
-            // >>> SỬA LỖI: Tạo index trên cột timestamp <<<
             database.execSQL("CREATE INDEX IF NOT EXISTS index_notes_timestamp ON notes(timestamp)");
             Log.d(TAG_MIGRATION, "Created index index_notes_timestamp on notes(timestamp).");
 
-            // Cập nhật timestamp cho các bản ghi hiện có (logic này giữ nguyên từ trước)
             Cursor cursor = database.query("SELECT id, date_time FROM notes");
             if (cursor.moveToFirst()) {
-                // Cố gắng sử dụng định dạng mà bạn đã dùng để lưu date_time
-                // Ví dụ: "EEEE, dd MMMM yyyy HH:mm a" (thêm yyyy để đầy đủ hơn)
                 SimpleDateFormat displayFormatDefault = new SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm a", Locale.getDefault());
-                SimpleDateFormat displayFormatUS = new SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm a", Locale.US); // Fallback
+                SimpleDateFormat displayFormatUS = new SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm a", Locale.US);
 
                 int idColumnIndex = cursor.getColumnIndex("id");
                 int dateTimeColumnIndex = cursor.getColumnIndex("date_time");
@@ -93,9 +86,7 @@ public abstract class NoteDatabase extends RoomDatabase {
                 do {
                     int id = cursor.getInt(idColumnIndex);
                     String dateTimeStr = cursor.getString(dateTimeColumnIndex);
-                    // Đặt một giá trị mặc định hợp lý, ví dụ: thời gian hiện tại trừ đi một chút dựa trên id
-                    // để các ghi chú cũ hơn có timestamp nhỏ hơn nếu không parse được.
-                    long calculatedTimestamp = System.currentTimeMillis() - ((long)id * 60000); // trừ đi 1 phút cho mỗi id giảm dần
+                    long calculatedTimestamp = System.currentTimeMillis() - ((long)id * 60000);
 
                     if (dateTimeStr != null && !dateTimeStr.isEmpty()) {
                         Date date = null;
@@ -118,6 +109,21 @@ public abstract class NoteDatabase extends RoomDatabase {
             cursor.close();
             Log.d(TAG_MIGRATION, "MIGRATION_3_4: Finished attempting to update timestamps for existing notes.");
             Log.i(TAG_MIGRATION, "Finished MIGRATION_3_4");
+        }
+    };
+
+    // >>> MIGRATION TỪ VERSION 4 SANG 5 ĐỂ THÊM is_pinned <<<
+    static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            Log.i(TAG_MIGRATION, "Running MIGRATION_4_5");
+            // Thêm cột is_pinned với giá trị mặc định là 0 (false)
+            database.execSQL("ALTER TABLE notes ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0");
+            Log.d(TAG_MIGRATION, "Added is_pinned column to notes table.");
+            // Tạo index cho cột is_pinned để tối ưu truy vấn
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_notes_is_pinned ON notes(is_pinned)");
+            Log.d(TAG_MIGRATION, "Created index index_notes_is_pinned on notes(is_pinned).");
+            Log.i(TAG_MIGRATION, "Finished MIGRATION_4_5");
         }
     };
 }

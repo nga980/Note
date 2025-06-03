@@ -33,6 +33,20 @@
                 app:tint="@color/colorIcons" />
 
             <ImageView
+                android:id="@+id/imagePin"
+                android:layout_width="@dimen/_30sdp"
+                android:layout_height="@dimen/_30sdp"
+                android:layout_marginEnd="@dimen/_12sdp"
+                android:contentDescription="@string/action_pin_note_description"
+                android:padding="@dimen/_4sdp"
+                android:src="@drawable/ic_pin_outline"
+                app:tint="@color/colorIcons"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:layout_constraintBottom_toBottomOf="@id/imageBack"
+                app:layout_constraintTop_toTopOf="@id/imageBack"
+                app:layout_constraintEnd_toStartOf="@id/imageSave"/>
+
+            <ImageView
                 android:id="@+id/imageSave"
                 android:layout_width="@dimen/_20sdp"
                 android:layout_height="@dimen/_20sdp"

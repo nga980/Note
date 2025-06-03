@@ -79,8 +79,7 @@
     <string name="are_you_sure_empty_trash_message">
         Are you sure you want to permanently delete all notes in the trash?</string>
     <string name="are_you_sure_want_to_delete_this_note_permanently">
-        Are you sure you want to permanently delete all notes in the trash?</string>
-    <string name="trash_bin_emptied">Trash bin emptied successfully.</string>
+        Are you sure you want to permanently delete this note? This action cannot be undone.</string> <string name="trash_bin_emptied">Trash bin emptied successfully.</string>
     <string name="confirm_permanent_delete_message_with_title">
         Are you sure you want to permanently delete the note \"%1$s\"?</string>
     <string name="dialog_message_confirm_permanent_delete">
@@ -113,5 +112,12 @@
     <string name="error_deleting_mediastore_entry_on_failure">"Error deleting MediaStore entry on failure: "</string>
     <string name="unexpected_error_saving_drawing">"Unexpected error saving drawing: "</string>
     <string name="ok">Ok</string>
+
+    <string name="pin_note">Pin Note</string>
+    <string name="unpin_note">Unpin Note</string>
+    <string name="note_pinned">Note pinned</string>
+    <string name="note_unpinned">Note unpinned</string>
+    <string name="action_pin_note_description">Pin or unpin this note</string>
+    <string name="pinned_indicator_description">Pinned note indicator</string>
 
 </resources>

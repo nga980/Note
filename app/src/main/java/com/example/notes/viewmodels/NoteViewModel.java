@@ -21,13 +21,14 @@ public class NoteViewModel extends AndroidViewModel {
     public NoteViewModel(Application application) {
         super(application);
         repository = new NoteRepository(application);
-        // Đặt thứ tự sắp xếp mặc định. MainActivity sẽ tải tùy chọn của người dùng và có thể ghi đè giá trị này.
-        currentSortOrderLiveData.setValue(SortCriteria.DATE_MODIFIED_DESC);
+        currentSortOrderLiveData.setValue(SortCriteria.DATE_MODIFIED_DESC); // Mặc định
 
         allNotes = Transformations.switchMap(currentSortOrderLiveData, criteria -> {
-            if (criteria == null) { // Lý tưởng nhất là không xảy ra nếu giá trị mặc định được đặt
+            if (criteria == null) {
                 return repository.getAllNotesSortedByDateModifiedDesc();
             }
+            // DAO đã được cập nhật để xử lý is_pinned DESC trước,
+            // nên không cần thay đổi logic switch ở đây nhiều.
             switch (criteria) {
                 case TITLE_ASC:
                     return repository.getAllNotesSortedByTitleAsc();
@@ -55,7 +56,7 @@ public class NoteViewModel extends AndroidViewModel {
     }
 
     public void delete(Note note) {
-        repository.delete(note); // Lệnh này gọi moveToTrash trong repository
+        repository.delete(note); // Gọi moveToTrash, sẽ tự động bỏ ghim
     }
 
     public void insert(Note note) {
@@ -64,5 +65,10 @@ public class NoteViewModel extends AndroidViewModel {
 
     public void update(Note note) {
         repository.update(note);
+    }
+
+    // >>> PHƯƠNG THỨC MỚI ĐỂ CẬP NHẬT TRẠNG THÁI GHIM <<<
+    public void updatePinStatus(int noteId, boolean isPinned) {
+        repository.updatePinStatus(noteId, isPinned);
     }
 }

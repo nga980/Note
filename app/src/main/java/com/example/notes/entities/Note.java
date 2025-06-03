@@ -6,7 +6,7 @@ import androidx.room.Index; // Thêm import này
 import androidx.room.PrimaryKey;
 import java.io.Serializable;
 
-@Entity(tableName = "notes", indices = {@Index(value = {"timestamp"})}) // Thêm index cho timestamp
+@Entity(tableName = "notes", indices = {@Index(value = {"timestamp"}), @Index(value = {"is_pinned"})}) // Thêm index cho is_pinned
 public class Note implements Serializable {
 
     @PrimaryKey(autoGenerate = true)
@@ -46,11 +46,16 @@ public class Note implements Serializable {
     @ColumnInfo(name = "timestamp")
     private long timestamp;
 
+    // >>> TRƯỜNG MỚI CHO TÍNH NĂNG GHIM <<<
+    @ColumnInfo(name = "is_pinned", defaultValue = "0")
+    private boolean isPinned;
+
 
     public Note() {
         this.isDeleted = false;
         this.deletionTime = 0;
         this.timestamp = System.currentTimeMillis(); // Giá trị mặc định khi tạo mới
+        this.isPinned = false; // Giá trị mặc định khi tạo mới
     }
 
     // ... (các getter và setter hiện có) ...
@@ -152,8 +157,17 @@ public class Note implements Serializable {
         this.timestamp = timestamp;
     }
 
+    // >>> GETTER VÀ SETTER CHO isPinned <<<
+    public boolean isPinned() {
+        return isPinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        isPinned = pinned;
+    }
+
     @Override
     public String toString() {
-        return title + " : " + dateTime;
+        return (isPinned ? "[PINNED] " : "") + title + " : " + dateTime;
     }
 }

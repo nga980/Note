@@ -20,19 +20,21 @@ public class NoteRepository {
         appExecutors = AppExecutors.getInstance();
     }
 
-    // ... (các phương thức hiện có) ...
     public LiveData<List<Note>> getAllNotes() {
         return noteDao.getAllNotes();
     }
 
     public void insert(Note note) {
+        // isPinned đã được đặt mặc định trong Entity
         note.setDeleted(false);
         note.setDeletionTime(0);
+        // timestamp đã được đặt khi tạo Note hoặc sẽ được cập nhật khi lưu
         appExecutors.diskIO().execute(() -> noteDao.insertNote(note));
     }
 
     public void moveToTrash(Note note) {
         final long currentTime = System.currentTimeMillis();
+        // DAO sẽ tự động bỏ ghim khi chuyển vào thùng rác
         appExecutors.diskIO().execute(() -> noteDao.moveToTrash(note.getId(), currentTime));
     }
 
@@ -41,8 +43,10 @@ public class NoteRepository {
     }
 
     public void update(Note note) {
+        // isPinned sẽ được lấy từ đối tượng note truyền vào (đã được set trong CreateNoteActivity)
         note.setDeleted(false);
         note.setDeletionTime(0);
+        // timestamp đã được cập nhật trong CreateNoteActivity trước khi gọi update
         appExecutors.diskIO().execute(() -> noteDao.updateNote(note));
     }
 
@@ -71,7 +75,8 @@ public class NoteRepository {
     }
 
     public void restoreNoteFromTrash(Note note) {
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = System.currentTimeMillis(); // Thời gian khôi phục, cũng là timestamp mới
+        // DAO sẽ tự động đặt is_pinned = 0 và cập nhật timestamp
         appExecutors.diskIO().execute(() -> noteDao.restoreFromTrash(note.getId(), currentTime));
     }
 
@@ -92,11 +97,6 @@ public class NoteRepository {
         });
     }
 
-    // >>> BỎ CHÚ THÍCH VÀ TRIỂN KHAI PHƯƠNG THỨC NÀY <<<
-    /**
-     * Dọn sạch toàn bộ thùng rác.
-     * Phương thức này sẽ xóa vĩnh viễn TẤT CẢ các ghi chú đang trong thùng rác.
-     */
     public void emptyAllTrash() {
         appExecutors.diskIO().execute(new Runnable() {
             @Override
@@ -104,5 +104,11 @@ public class NoteRepository {
                 noteDao.permanentlyDeleteAllTrashedNotes();
             }
         });
+    }
+
+    // >>> PHƯƠNG THỨC MỚI ĐỂ CẬP NHẬT TRẠNG THÁI GHIM <<<
+    public void updatePinStatus(int noteId, boolean isPinned) {
+        final long currentTime = System.currentTimeMillis(); // Cập nhật timestamp khi ghim/bỏ ghim
+        appExecutors.diskIO().execute(() -> noteDao.updatePinStatus(noteId, isPinned, currentTime));
     }
 }

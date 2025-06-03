@@ -11,16 +11,34 @@
     android:background="@drawable/background_note"
     android:orientation="vertical">
 
-    <com.makeramen.roundedimageview.RoundedImageView
-        android:id="@+id/imageNote"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:visibility="gone"
-        app:riv_corner_radius_top_left="@dimen/_10sdp"
-        app:riv_corner_radius_top_right="@dimen/_10sdp"
-        app:riv_corner_radius_bottom_left="0dp"
-        app:riv_corner_radius_bottom_right="0dp" />
+        android:layout_height="wrap_content">
+
+        <com.makeramen.roundedimageview.RoundedImageView
+            android:id="@+id/imageNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:visibility="gone"
+            app:riv_corner_radius_top_left="@dimen/_10sdp"
+            app:riv_corner_radius_top_right="@dimen/_10sdp"
+            app:riv_corner_radius_bottom_left="0dp"
+            app:riv_corner_radius_bottom_right="0dp" />
+
+        <ImageView
+            android:id="@+id/imagePinned"
+            android:layout_width="@dimen/_18sdp"
+            android:layout_height="@dimen/_18sdp"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="@dimen/_6sdp"
+            android:layout_marginEnd="@dimen/_6sdp"
+            android:src="@drawable/ic_pin_filled"
+            app:tint="@color/colorAccent"
+            android:visibility="gone"
+            android:contentDescription="@string/pinned_indicator_description"/>
+    </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"

@@ -76,6 +76,11 @@ public class CreateNoteActivity extends AppCompatActivity {
     private ActivityResultLauncher<String> requestPermissionLauncher;
     private ActivityResultLauncher<String> pickImageLauncher;
     private ActivityResultLauncher<Intent> drawingActivityLauncher;
+
+    // >>> BIẾN CHO TRẠNG THÁI GHIM <<<
+    private boolean currentIsPinned = false;
+
+    // Biến lưu trạng thái ban đầu để kiểm tra thay đổi
     private String initialTitle = "";
     private String initialSubtitle = "";
     private String initialNoteText = "";
@@ -83,6 +88,8 @@ public class CreateNoteActivity extends AppCompatActivity {
     private String initialImagePath = "";
     private String initialWebLink = "";
     private String initialDrawingPath = "";
+    private boolean initialIsPinned = false; // <<< TRẠNG THÁI GHIM BAN ĐẦU
+
     private static final String DEFAULT_NOTE_COLOR = "#333333";
     private boolean isBoldActive = false;
     private boolean isItalicActive = false;
@@ -103,7 +110,6 @@ public class CreateNoteActivity extends AppCompatActivity {
             if (isGranted) {
                 actualLaunchImagePicker();
             } else {
-                // Kiểm tra xem người dùng có chọn "Don't ask again" không
                 String permissionNeeded = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ?
                         Manifest.permission.READ_MEDIA_IMAGES : Manifest.permission.READ_EXTERNAL_STORAGE;
                 if (!shouldShowRequestPermissionRationale(permissionNeeded)) {
@@ -124,17 +130,16 @@ public class CreateNoteActivity extends AppCompatActivity {
 
         pickImageLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
             if (uri != null) {
-                selectedImagePath = copyFileToInternalStorage(uri, IMAGES_DIR_NAME); // Lưu vào internal storage
+                selectedImagePath = copyFileToInternalStorage(uri, IMAGES_DIR_NAME);
                 if (selectedImagePath != null && !selectedImagePath.isEmpty()) {
                     try {
-                        // Hiển thị ảnh từ đường dẫn nội bộ đã lưu
                         binding.imageNote.setImageURI(Uri.fromFile(new File(selectedImagePath)));
                         binding.imageNote.setVisibility(View.VISIBLE);
                         binding.imageRemoveImage.setVisibility(View.VISIBLE);
                     } catch (Exception e) {
                         Toast.makeText(this, getString(R.string.failed_to_load_image) + e.getMessage(), Toast.LENGTH_SHORT).show();
                         Log.e(TAG, getString(R.string.error_decoding_image_stream) + e.getMessage(), e);
-                        selectedImagePath = ""; // Reset nếu lỗi
+                        selectedImagePath = "";
                         binding.imageNote.setVisibility(View.GONE);
                         binding.imageRemoveImage.setVisibility(View.GONE);
                     }
@@ -154,7 +159,7 @@ public class CreateNoteActivity extends AppCompatActivity {
                         if (path != null && !path.isEmpty()) {
                             File drawingFile = new File(path);
                             if (drawingFile.exists()) {
-                                selectedDrawingPath = path; // DrawActivity đã trả về đường dẫn nội bộ
+                                selectedDrawingPath = path;
                                 if (binding.imageDrawing != null) {
                                     binding.imageDrawing.setImageURI(Uri.fromFile(drawingFile));
                                     binding.imageDrawing.setVisibility(View.VISIBLE);
@@ -165,7 +170,7 @@ public class CreateNoteActivity extends AppCompatActivity {
                             } else {
                                 Toast.makeText(this, R.string.drawing_file_not_found, Toast.LENGTH_SHORT).show();
                                 Log.e(TAG, getString(R.string.drawing_file_does_not_exist) + path);
-                                selectedDrawingPath = ""; // Reset nếu file không tồn tại
+                                selectedDrawingPath = "";
                             }
                         }
                     }
@@ -175,21 +180,26 @@ public class CreateNoteActivity extends AppCompatActivity {
         binding.imageBack.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
 
         binding.textDateTime.setText(
-                new SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm a", Locale.getDefault()) // Sử dụng yyyy thay cho GGGG
+                new SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm a", Locale.getDefault())
                         .format(new Date())
         );
 
         binding.imageSave.setOnClickListener(v -> saveNote());
 
+        // >>> XỬ LÝ SỰ KIỆN CHO NÚT GHIM <<<
+        binding.imagePin.setOnClickListener(v -> togglePinStatus());
+
         selectedNoteColor = DEFAULT_NOTE_COLOR;
         selectedImagePath = "";
         selectedDrawingPath = "";
+        currentIsPinned = false; // Mặc định là chưa ghim
 
         if (getIntent().getBooleanExtra("isViewOrUpdate", false)) {
             alreadyAvailableNote = (Note) getIntent().getSerializableExtra("note");
             setViewOrUpdateNote();
+        } else {
+            updatePinIcon(); // Cập nhật icon cho ghi chú mới (mặc định là unpinned)
         }
-        // Gọi captureInitialNoteState sau khi setViewOrUpdateNote hoặc sau giá trị mặc định
         captureInitialNoteState();
 
 
@@ -210,7 +220,7 @@ public class CreateNoteActivity extends AppCompatActivity {
 
         if (binding.imageRemoveDrawing != null) {
             binding.imageRemoveDrawing.setOnClickListener(v -> {
-                deleteFileFromInternalStorage(selectedDrawingPath); // Xóa file nếu có
+                deleteFileFromInternalStorage(selectedDrawingPath);
                 selectedDrawingPath = "";
                 binding.imageDrawing.setVisibility(View.GONE);
                 binding.imageRemoveDrawing.setVisibility(View.GONE);
@@ -228,14 +238,14 @@ public class CreateNoteActivity extends AppCompatActivity {
                             .setTitle(R.string.unsaved_changes)
                             .setMessage(R.string.confirm_discard_changes)
                             .setPositiveButton(R.string.discard, (dialog, which) -> {
-                                setEnabled(false);
-                                getOnBackPressedDispatcher().onBackPressed();
+                                setEnabled(false); // Vô hiệu hóa callback này
+                                getOnBackPressedDispatcher().onBackPressed(); // Gọi lại để thực sự thoát
                             })
                             .setNegativeButton(R.string.keep_editing, (dialog, which) -> dialog.dismiss())
                             .show();
                 } else {
-                    setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
+                    setEnabled(false); // Vô hiệu hóa callback này
+                    getOnBackPressedDispatcher().onBackPressed(); // Gọi lại để thực sự thoát
                 }
             }
         });
@@ -255,6 +265,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             initialImagePath = alreadyAvailableNote.getImagePath() != null ? alreadyAvailableNote.getImagePath() : "";
             initialWebLink = alreadyAvailableNote.getWebLink() != null ? alreadyAvailableNote.getWebLink().trim() : "";
             initialDrawingPath = alreadyAvailableNote.getDrawingPath() != null ? alreadyAvailableNote.getDrawingPath() : "";
+            initialIsPinned = alreadyAvailableNote.isPinned(); // <<< LƯU TRẠNG THÁI GHIM BAN ĐẦU
         } else {
             initialTitle = binding.inputNoteTitle.getText().toString().trim();
             initialSubtitle = binding.inputNoteSubtitle.getText().toString().trim();
@@ -264,6 +275,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             initialImagePath = selectedImagePath;
             initialWebLink = (binding.layoutWebURL.getVisibility() == View.VISIBLE) ? binding.textWebURL.getText().toString().trim() : "";
             initialDrawingPath = selectedDrawingPath;
+            initialIsPinned = currentIsPinned; // <<< LƯU TRẠNG THÁI GHIM BAN ĐẦU CHO GHI CHÚ MỚI
         }
     }
 
@@ -280,7 +292,8 @@ public class CreateNoteActivity extends AppCompatActivity {
                 !Objects.equals(selectedNoteColor, initialColor) ||
                 !Objects.equals(selectedImagePath, initialImagePath) ||
                 !Objects.equals(currentWebLink, initialWebLink) ||
-                !Objects.equals(selectedDrawingPath, initialDrawingPath);
+                !Objects.equals(selectedDrawingPath, initialDrawingPath) ||
+                currentIsPinned != initialIsPinned; // <<< KIỂM TRA THAY ĐỔI GHIM
     }
 
     private void setViewOrUpdateNote() {
@@ -297,7 +310,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             binding.inputNote.setText("");
         }
 
-        selectedImagePath = alreadyAvailableNote.getImagePath(); // Gán giá trị ban đầu
+        selectedImagePath = alreadyAvailableNote.getImagePath();
         if (selectedImagePath != null && !selectedImagePath.trim().isEmpty()) {
             File imageFile = new File(selectedImagePath);
             if (imageFile.exists()) {
@@ -305,7 +318,7 @@ public class CreateNoteActivity extends AppCompatActivity {
                 binding.imageNote.setVisibility(View.VISIBLE);
                 binding.imageRemoveImage.setVisibility(View.VISIBLE);
             } else {
-                selectedImagePath = ""; // Reset nếu file không tồn tại
+                selectedImagePath = "";
                 binding.imageNote.setVisibility(View.GONE);
                 binding.imageRemoveImage.setVisibility(View.GONE);
                 Log.e(TAG, getString(R.string.image_file_not_found) + alreadyAvailableNote.getImagePath());
@@ -315,7 +328,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             binding.imageRemoveImage.setVisibility(View.GONE);
         }
 
-        selectedDrawingPath = alreadyAvailableNote.getDrawingPath(); // Gán giá trị ban đầu
+        selectedDrawingPath = alreadyAvailableNote.getDrawingPath();
         if (selectedDrawingPath != null && !selectedDrawingPath.trim().isEmpty()) {
             File drawingFile = new File(selectedDrawingPath);
             if (drawingFile.exists()) {
@@ -327,7 +340,7 @@ public class CreateNoteActivity extends AppCompatActivity {
                     }
                 }
             } else {
-                selectedDrawingPath = ""; // Reset nếu file không tồn tại
+                selectedDrawingPath = "";
                 if (binding.imageDrawing != null) binding.imageDrawing.setVisibility(View.GONE);
                 if (binding.imageRemoveDrawing != null) binding.imageRemoveDrawing.setVisibility(View.GONE);
                 Log.e(TAG, getString(R.string.drawing_file_not_found) + " " + alreadyAvailableNote.getDrawingPath());
@@ -353,8 +366,33 @@ public class CreateNoteActivity extends AppCompatActivity {
         if (binding.miscellaneousLayout != null && binding.miscellaneousLayout.getRoot().findViewById(R.id.layoutMiscellaneous) != null) {
             setCheckmarkOnSelectedColor(selectedNoteColor);
         }
+
+        // >>> CẬP NHẬT TRẠNG THÁI GHIM <<<
+        currentIsPinned = alreadyAvailableNote.isPinned();
+        updatePinIcon();
     }
 
+    // >>> PHƯƠNG THỨC TOGGLE GHIM <<<
+    private void togglePinStatus() {
+        currentIsPinned = !currentIsPinned;
+        updatePinIcon();
+        if (currentIsPinned) {
+            Toast.makeText(this, R.string.note_pinned, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, R.string.note_unpinned, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // >>> PHƯƠNG THỨC CẬP NHẬT ICON GHIM <<<
+    private void updatePinIcon() {
+        if (currentIsPinned) {
+            binding.imagePin.setImageResource(R.drawable.ic_pin_filled);
+            binding.imagePin.setColorFilter(ContextCompat.getColor(this, R.color.colorAccent)); // Hoặc màu bạn muốn cho trạng thái ghim
+        } else {
+            binding.imagePin.setImageResource(R.drawable.ic_pin_outline);
+            binding.imagePin.setColorFilter(ContextCompat.getColor(this, R.color.colorIcons)); // Màu mặc định
+        }
+    }
 
     private void saveNote() {
         final String noteTitle = binding.inputNoteTitle.getText().toString().trim();
@@ -386,30 +424,29 @@ public class CreateNoteActivity extends AppCompatActivity {
         note.setSubtitle(noteSubtitle);
         note.setNoteText(htmlNoteContent);
         note.setDateTime(noteDateTimeDisplay);
-        note.setTimestamp(System.currentTimeMillis()); // Luôn cập nhật timestamp khi lưu
+        note.setTimestamp(System.currentTimeMillis());
         note.setColor(selectedNoteColor);
-        note.setImagePath(selectedImagePath); // Đã là đường dẫn nội bộ
-        note.setDrawingPath(selectedDrawingPath); // Đã là đường dẫn nội bộ
+        note.setImagePath(selectedImagePath);
+        note.setDrawingPath(selectedDrawingPath);
+        note.setPinned(currentIsPinned); // <<< LƯU TRẠNG THÁI GHIM
 
         if (binding.layoutWebURL.getVisibility() == View.VISIBLE) {
             note.setWebLink(binding.textWebURL.getText().toString().trim());
         }
 
-        // Cập nhật initial state để hasUnsavedChanges hoạt động đúng
         captureInitialNoteStateAfterSave(note);
-
 
         if (alreadyAvailableNote != null) {
             note.setId(alreadyAvailableNote.getId());
-            // Xóa file ảnh/bản vẽ cũ nếu đường dẫn thay đổi hoặc bị xóa
             handleOldFileDeletion(alreadyAvailableNote.getImagePath(), selectedImagePath);
             handleOldFileDeletion(alreadyAvailableNote.getDrawingPath(), selectedDrawingPath);
-            noteViewModel.update(note);
+            noteViewModel.update(note); // update cũng sẽ cập nhật trạng thái ghim và timestamp
         } else {
             noteViewModel.insert(note);
         }
 
         Intent intent = new Intent();
+        // intent.putExtra("isNotePinned", currentIsPinned); // Có thể trả về nếu MainActivity cần
         setResult(RESULT_OK, intent);
         finish();
     }
@@ -427,10 +464,10 @@ public class CreateNoteActivity extends AppCompatActivity {
         initialImagePath = savedNote.getImagePath() != null ? savedNote.getImagePath() : "";
         initialWebLink = savedNote.getWebLink() != null ? savedNote.getWebLink().trim() : "";
         initialDrawingPath = savedNote.getDrawingPath() != null ? savedNote.getDrawingPath() : "";
+        initialIsPinned = savedNote.isPinned(); // <<< CẬP NHẬT TRẠNG THÁI GHIM BAN ĐẦU SAU KHI LƯU
     }
 
     private void handleOldFileDeletion(String oldPath, String newPath) {
-        // Nếu có đường dẫn cũ, và nó khác đường dẫn mới (hoặc đường dẫn mới rỗng nghĩa là file bị xóa)
         if (oldPath != null && !oldPath.isEmpty() && !oldPath.equals(newPath)) {
             deleteFileFromInternalStorage(oldPath);
         }
@@ -562,7 +599,6 @@ public class CreateNoteActivity extends AppCompatActivity {
             miscBinding.layoutAddDrawing.setOnClickListener(v -> {
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                 Intent intent = new Intent(getApplicationContext(), DrawActivity.class);
-                // Truyền đường dẫn bản vẽ hiện tại nếu có để DrawActivity có thể tải nó
                 if (selectedDrawingPath != null && !selectedDrawingPath.isEmpty()) {
                     intent.putExtra(DrawActivity.EXTRA_DRAWING_PATH_TO_LOAD, selectedDrawingPath);
                 }
@@ -581,7 +617,7 @@ public class CreateNoteActivity extends AppCompatActivity {
         }
 
         binding.imageRemoveImage.setOnClickListener(v -> {
-            deleteFileFromInternalStorage(selectedImagePath); // Xóa file nếu có
+            deleteFileFromInternalStorage(selectedImagePath);
             selectedImagePath = "";
             binding.imageNote.setVisibility(View.GONE);
             binding.imageRemoveImage.setVisibility(View.GONE);
@@ -647,8 +683,6 @@ public class CreateNoteActivity extends AppCompatActivity {
     }
 
     private boolean isSelectionStyled(Editable editable, int start, int end, Class<? extends CharacterStyle> styleClass, int styleType) {
-        // Kiểm tra xem toàn bộ vùng chọn có style đó không.
-        // Nếu bất kỳ ký tự nào trong vùng chọn không có style, thì coi như isStyled là false.
         if (start == end) return hasStyleAtCursor(editable, start, styleClass, styleType);
 
         for (int i = start; i < end; i++) {
@@ -663,9 +697,9 @@ public class CreateNoteActivity extends AppCompatActivity {
                     break;
                 }
             }
-            if (!charHasStyle) return false; // Nếu một ký tự không có style, toàn bộ vùng chọn không được coi là styled.
+            if (!charHasStyle) return false;
         }
-        return true; // Tất cả ký tự trong vùng chọn đều có style.
+        return true;
     }
 
 
@@ -685,10 +719,10 @@ public class CreateNoteActivity extends AppCompatActivity {
             return;
         }
 
-        if (selectionStart != selectionEnd) { // Có vùng chọn
+        if (selectionStart != selectionEnd) {
             boolean currentSelectionIsStyled = isSelectionStyled(editable, selectionStart, selectionEnd, spanClassToQuery, styleTypeToMatch);
 
-            if (currentSelectionIsStyled) { // Nếu đã styled -> xóa style
+            if (currentSelectionIsStyled) {
                 T[] spansToRemove = editable.getSpans(selectionStart, selectionEnd, spanClassToQuery);
                 for (T span : spansToRemove) {
                     if (span instanceof StyleSpan && ((StyleSpan) span).getStyle() == styleTypeToMatch) {
@@ -697,8 +731,7 @@ public class CreateNoteActivity extends AppCompatActivity {
                         editable.removeSpan(span);
                     }
                 }
-            } else { // Nếu chưa styled -> áp dụng style
-                // Trước khi áp dụng style mới, xóa các style xung đột có thể có từng phần
+            } else {
                 T[] existingSpans = editable.getSpans(selectionStart, selectionEnd, spanClassToQuery);
                 for (T span : existingSpans) {
                     if (span instanceof StyleSpan && ((StyleSpan) span).getStyle() == styleTypeToMatch) {
@@ -710,8 +743,6 @@ public class CreateNoteActivity extends AppCompatActivity {
                 editable.setSpan(styleSpanToApply, selectionStart, selectionEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }
-        // Trạng thái (isBoldActive, v.v.) đã được cập nhật bởi listener của button.
-        // onTextChanged sẽ xử lý việc áp dụng style khi gõ nếu không có vùng chọn.
         updateFormatButtonStates();
         isFormattingText = false;
     }
@@ -774,26 +805,18 @@ public class CreateNoteActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Copies a file from a content URI to the app's internal storage.
-     * @param sourceUri The content URI of the source file.
-     * @param targetDirectoryName The name of the directory within getFilesDir() to save the file.
-     * @return The absolute path to the saved file in internal storage, or null if failed.
-     */
     private String copyFileToInternalStorage(Uri sourceUri, String targetDirectoryName) {
         if (sourceUri == null) return null;
 
-        String fileExtension = ".dat"; // Default extension
+        String fileExtension = ".dat";
         String mimeType = getContentResolver().getType(sourceUri);
         if (mimeType != null) {
             if (mimeType.startsWith("image/")) {
                 fileExtension = "." + mimeType.substring(mimeType.lastIndexOf('/') + 1);
-                if (fileExtension.equals(".jpeg")) fileExtension = ".jpg"; // Normalize
+                if (fileExtension.equals(".jpeg")) fileExtension = ".jpg";
             }
-            // Add more mime types if needed for other file types
         }
 
-        // Create a unique file name
         String fileName = targetDirectoryName.substring(0, Math.min(targetDirectoryName.length(), 4)) + "_" +
                 UUID.randomUUID().toString() + fileExtension;
 
@@ -815,7 +838,7 @@ public class CreateNoteActivity extends AppCompatActivity {
                 return null;
             }
 
-            byte[] buffer = new byte[4096]; // 4KB buffer
+            byte[] buffer = new byte[4096];
             int bytesRead;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
@@ -825,7 +848,7 @@ public class CreateNoteActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             Log.e(TAG, "Error copying file to internal storage: " + e.getMessage(), e);
-            if (outputFile.exists()) { // Clean up if copy failed partially
+            if (outputFile.exists()) {
                 outputFile.delete();
             }
             return null;
@@ -837,10 +860,9 @@ public class CreateNoteActivity extends AppCompatActivity {
             return;
         }
         File fileToDelete = new File(filePath);
-        // An toàn hơn: chỉ xóa file nếu nó nằm trong thư mục của ứng dụng
         if (fileToDelete.exists() && fileToDelete.isFile() &&
                 (filePath.startsWith(getFilesDir() + File.separator + IMAGES_DIR_NAME) ||
-                        filePath.startsWith(getFilesDir() + File.separator + DrawActivity.DRAWINGS_DIR_NAME_STATIC))) { // Sử dụng hằng số từ DrawActivity
+                        filePath.startsWith(getFilesDir() + File.separator + DrawActivity.DRAWINGS_DIR_NAME_STATIC))) {
             if (fileToDelete.delete()) {
                 Log.d(TAG, "Successfully deleted internal file: " + filePath);
             } else {
@@ -875,11 +897,20 @@ public class CreateNoteActivity extends AppCompatActivity {
                 } else {
                     binding.textWebURL.setText(url);
                     binding.layoutWebURL.setVisibility(View.VISIBLE);
+                    inputURL.setText(""); // Xóa input sau khi thêm
                     dialogAddURL.dismiss();
                 }
             });
 
-            view.findViewById(R.id.textCancel).setOnClickListener(v1 -> dialogAddURL.dismiss());
+            view.findViewById(R.id.textCancel).setOnClickListener(v1 -> {
+                inputURL.setText(""); // Xóa input khi hủy
+                dialogAddURL.dismiss();
+            });
+        }
+        // Đảm bảo inputURL trống khi dialog hiển thị lại
+        EditText inputUrlInDialog = dialogAddURL.findViewById(R.id.inputUrl);
+        if(inputUrlInDialog != null) {
+            inputUrlInDialog.setText("");
         }
         dialogAddURL.show();
     }
@@ -896,10 +927,9 @@ public class CreateNoteActivity extends AppCompatActivity {
 
             view.findViewById(R.id.textDeleteNote).setOnClickListener(v -> {
                 if (alreadyAvailableNote != null) {
-                    // Xóa file media liên quan trước khi xóa note khỏi DB
                     deleteFileFromInternalStorage(alreadyAvailableNote.getImagePath());
                     deleteFileFromInternalStorage(alreadyAvailableNote.getDrawingPath());
-                    noteViewModel.delete(alreadyAvailableNote);
+                    noteViewModel.delete(alreadyAvailableNote); // Sẽ tự động bỏ ghim
                 }
                 Intent intent = new Intent();
                 intent.putExtra("action_performed", "deleted_to_trash");
