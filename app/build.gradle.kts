@@ -52,6 +52,8 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("androidx.work:work-runtime:2.9.0")
+    implementation ("com.github.bumptech.glide:glide:4.16.0") // Kiểm tra phiên bản mới nhất trên trang chủ Glide
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")// Bỏ comment nếu bạn dùng Java và cần generate API
 
     // Testing
     testImplementation("junit:junit:4.13.2")

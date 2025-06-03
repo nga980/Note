@@ -85,5 +85,33 @@
         Are you sure you want to permanently delete the note \"%1$s\"?</string>
     <string name="dialog_message_confirm_permanent_delete">
         Are you sure you want to permanently delete this note? This action cannot be undone.</string>
+    <string name="permission_denied_permanently">Permision Denied Permanently</string>
+    <string name="go_to_settings">Go To Settings</string>
+    <string name="failed_to_load_image">"Failed to load image: "</string>
+    <string name="error_decoding_image_stream">"Error decoding image stream: "</string>
+    <string name="drawing_file_not_found">Drawing file not found</string>
+    <string name="drawing_file_does_not_exist">"Drawing file does not exist: "</string>
+    <string name="image_file_not_found">"Image file not found: "</string>
+    <string name="error_splitting_span">"Error splitting span: "</string>
+    <string name="add_image_clicked">Add Image clicked</string>
+    <string name="layoutaddimage_is_null_check_layout_miscellaneous_xml">layoutAddImage is null. Check layout_miscellaneous.xml</string>
+    <string name="add_url_clicked">Add URL clicked</string>
+    <string name="this_permission_is_needed_to_select_images_from_your_device">This permission is needed to select images from your device.</string>
+    <string name="failed_to_parse_color">"Failed to parse color: "</string>
+    <string name="error_copying_image_to_cache">"Error copying image to cache: "</string>
+    <string name="save_button_clicked">Save button clicked.</string>
+    <string name="drawing_found_proceeding_to_savedrawingandfinish">Drawing found, proceeding to saveDrawingAndFinish.</string>
+    <string name="no_drawing_to_save">No drawing to save.</string>
+    <string name="requesting_write_external_storage_permission_for_pre_q_device">Requesting WRITE_EXTERNAL_STORAGE permission for pre-Q device.</string>
+    <string name="proceeding_with_actuallysavedrawing">Proceeding with actuallySaveDrawing.</string>
+    <string name="drawing_saved_to_mediastore">"Drawing saved to MediaStore: "</string>
+    <string name="failed_to_create_internal_directory">"Failed to create internal directory: "</string>
+    <string name="drawing_copied_to_internal_path">"Drawing copied to internal path: "</string>
+    <string name="cannot_create_public_directory_falling_back_to_internal">"Cannot create public directory, falling back to internal: "</string>
+    <string name="drawing_saved_to_pre_q">"Drawing saved to (Pre-Q): "</string>
+    <string name="saving_failed_path_not_set">Saving failed, path not set.</string>
+    <string name="error_deleting_mediastore_entry_on_failure">"Error deleting MediaStore entry on failure: "</string>
+    <string name="unexpected_error_saving_drawing">"Unexpected error saving drawing: "</string>
+    <string name="ok">Ok</string>
 
 </resources>

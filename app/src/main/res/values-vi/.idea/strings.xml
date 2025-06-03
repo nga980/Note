@@ -1,0 +1,99 @@
+<resources>
+    <string name="app_name">Ghi Chú</string>
+    <string name="my_notes">Ghi Chú Của Tôi</string>
+    <string name="search_notes">Tìm kiếm ghi chú</string>
+    <string name="note_subtitle">Phụ đề Ghi Chú</string>
+    <string name="type_note_here">Nhập nội dung ghi chú ở đây...</string>
+    <string name="miscellaneous">Tiện ích khác</string>
+    <string name="pick_color">Chọn Màu</string>
+    <string name="add_image">Thêm Ảnh</string>
+    <string name="image_preview">Xem trước ảnh</string>
+    <string name="add_url">Thêm URL</string>
+    <string name="enter_url">Nhập URL</string>
+    <string name="add">Thêm</string>
+    <string name="cancel_dialog">Hủy</string>
+    <string name="remove_image">Xóa Ảnh</string>
+    <string name="notes">Ghi Chú</string>
+    <string name="remove_url">Xóa URL</string>
+    <string name="delete_note">Xóa Ghi Chú</string>
+    <string name="are_you_sure_want_to_delete_this_note">Bạn có chắc chắn muốn xóa ghi chú này không?</string>
+    <string name="note_title">Tiêu đề Ghi Chú</string>
+    <string name="format">Định dạng</string>
+    <string name="sort_notes">Sắp xếp Ghi Chú</string>
+    <string name="sort_by_name_a_z">Sắp xếp theo Tên (A-Z)</string>
+    <string name="sort_by_name_z_a">Sắp xếp theo Tên (Z-A)</string>
+    <string name="sort_by_date_newest_first">Sắp xếp theo Ngày (Mới nhất trước)</string>
+    <string name="sort_by_date_oldest_first">Sắp xếp theo Ngày (Cũ nhất trước)</string>
+    <string name="trash_is_empty">Thùng rác trống</string>
+    <string name="empty_trash">Dọn Sạch Thùng Rác</string>
+    <string name="trash_bin">Thùng Rác</string>
+    <string name="restore_note">Khôi Phục Ghi Chú</string>
+    <string name="delete_permanently">Xóa Vĩnh Viễn</string>
+    <string name="confirm_empty_trash">Xác nhận Dọn Sạch Thùng Rác</string>
+    <string name="confirm_permanent_delete">Xác nhận Xóa Vĩnh Viễn</string>
+    <string name="note_restored">Ghi chú đã được khôi phục</string>
+    <string name="note_permanently_deleted">Ghi chú đã được xóa vĩnh viễn</string>
+    <string name="save_drawing">Lưu Bản Vẽ</string>
+    <string name="draw_in_white">Vẽ trong vùng trắng</string>
+    <string name="delete_all">Xóa Tất Cả</string>
+    <string name="undo">Hoàn tác</string>
+    <string name="draw">Vẽ Ghi Chú</string>
+    <string name="add_draw">Thêm Bản Vẽ</string>
+    <string name="drawing_preview">Xem trước bản vẽ</string>
+    <string name="remove_drawing">Xóa Bản Vẽ</string>
+    <string name="unsaved_changes">Thay đổi chưa được lưu</string>
+    <string name="confirm_discard_changes">Xác nhận hủy bỏ thay đổi</string>
+    <string name="discard">Hủy bỏ</string>
+    <string name="keep_editing">Tiếp tục chỉnh sửa</string>
+    <string name="note_title_cannot_be_empty">Tiêu đề ghi chú không được để trống</string>
+    <string name="select_text_to_format">Chọn văn bản để định dạng</string>
+    <string name="enter_valid_url">Nhập URL hợp lệ</string>
+    <string name="clear_drawing_title">Xóa Bản Vẽ</string>
+    <string name="confirm_clear_drawing">Xác nhận xóa bản vẽ</string>
+    <string name="nothing_to_save">Không có gì để lưu</string>
+    <string name="error_creating_drawing_bitmap">Lỗi khi tạo bitmap bản vẽ</string>
+    <string name="drawing_saved">Bản vẽ đã được lưu</string>
+    <string name="unsaved_drawing_title">Bản vẽ chưa được lưu</string>
+    <string name="confirm_save_drawing">Xác nhận lưu bản vẽ</string>
+    <string name="save">Lưu</string>
+    <string name="discard_drawing">Hủy bỏ bản vẽ</string>
+    <string name="cancel">Hủy</string>
+    <string name="error_saving_drawing">Lỗi khi lưu bản vẽ</string>
+    <string name="permission_needed_to_save_drawing">Cần quyền để lưu bản vẽ</string>
+    <string name="app_drawing_folder_name">AppDrawings</string>
+    <string name="app_drawing_folder_name_cache">AppDrawingsCache</string>
+    <string name="error_creating_mediastore_entry">Lỗi khi tạo mục trong MediaStore</string>
+    <string name="error_opening_outputstream">Lỗi khi mở luồng xuất</string>
+    <string name="drawing_saved_successfully">Bản vẽ đã được lưu thành công</string>
+    <string name="error_creating_cache_directory">Lỗi khi tạo thư mục bộ nhớ đệm</string>
+    <string name="error_creating_directory">Lỗi khi tạo thư mục</string>
+    <string name="no_notes_found">Không tìm thấy ghi chú nào</string>
+
+    <string name="add_new_note_description">Thêm ghi chú mới</string>
+    <string name="sort_notes_description">Sắp xếp ghi chú</string>
+    <string name="go_to_trash_description">Mở thùng rác</string>
+    <string name="add_image_description">Thêm ảnh vào ghi chú</string>
+    <string name="add_url_description">Thêm URL vào ghi chú</string>
+    <string name="add_drawing_description">Thêm bản vẽ vào ghi chú</string>
+    <string name="note_title_cant_be_empty">Tiêu đề ghi chú không được để trống</string>
+    <string name="are_you_sure_empty_trash_message">
+        Bạn có chắc chắn muốn xóa vĩnh viễn tất cả ghi chú trong thùng rác không?
+    </string>
+    <string name="are_you_sure_want_to_delete_this_note_permanently">
+        Bạn có chắc chắn muốn xóa vĩnh viễn ghi chú này không? Hành động này không thể hoàn tác.
+    </string>
+    <string name="trash_bin_emptied">Thùng rác đã được dọn sạch thành công.</string>
+    <string name="confirm_permanent_delete_message_with_title">
+        Bạn có chắc chắn muốn xóa vĩnh viễn ghi chú \"%1$s\" không?
+    </string>
+    <string name="dialog_message_confirm_permanent_delete">
+        Bạn có chắc chắn muốn xóa vĩnh viễn ghi chú này không? Hành động này không thể hoàn tác.
+    </string>
+
+    <string name="permission_denied_select_image">Quyền bị từ chối! Không thể chọn ảnh.</string>
+    <string name="permission_denied_permanently">Quyền bị từ chối vĩnh viễn. Vui lòng kích hoạt trong Cài đặt.</string>
+    <string name="go_to_settings">Đi tới Cài đặt</string>
+    <string name="failed_to_load_image">Không thể tải ảnh: </string>
+    <string name="drawing_file_not_found">Không tìm thấy tệp bản vẽ.</string>
+    <string name="unknown_io_error">Lỗi IO không xác định</string>
+</resources>

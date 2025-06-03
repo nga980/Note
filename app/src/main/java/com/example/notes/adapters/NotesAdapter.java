@@ -1,11 +1,8 @@
 package com.example.notes.adapters;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,28 +13,24 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy; // Cho tùy chọn cache
 import com.example.notes.R;
 import com.example.notes.entities.Note;
 import com.example.notes.listeners.NotesListener;
 import com.makeramen.roundedimageview.RoundedImageView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-// Timer và TimerTask không còn được sử dụng trực tiếp ở đây nữa
-// import java.util.Timer;
-// import java.util.TimerTask;
-
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> {
 
     private static final String TAG = "NotesAdapter";
     private List<Note> notes;
     private NotesListener notesListener;
-    private List<Note> notesSource; // Danh sách này để giữ bản gốc của tất cả các ghi chú
+    private List<Note> notesSource;
 
-    private static final String DEFAULT_NOTE_COLOR = "#333333"; // Định nghĩa màu mặc định
-
-    // Timer không còn được sử dụng nữa
-    // private Timer timer;
+    private static final String DEFAULT_NOTE_COLOR = "#333333";
 
 
     public NotesAdapter(List<Note> notes, NotesListener notesListener) {
@@ -113,7 +106,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 if (!matches && note.getSubtitle() != null && note.getSubtitle().toLowerCase().contains(lowerCaseKeyword)) {
                     matches = true;
                 }
-                if (!matches && note.getNoteText() != null && note.getNoteText().toLowerCase().contains(lowerCaseKeyword)) {
+                // Chuyển đổi HTML noteText sang plain text trước khi tìm kiếm
+                String plainNoteText = "";
+                if (note.getNoteText() != null) {
+                    plainNoteText = note.getNoteText().toLowerCase();
+                }
+
+                if (!matches && !plainNoteText.isEmpty() && plainNoteText.contains(lowerCaseKeyword)) {
                     matches = true;
                 }
 
@@ -123,32 +122,20 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             }
         }
         Log.d(TAG, "Number of notes after filtering: " + notes.size());
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                notifyDataSetChanged();
-            }
-        });
+
+        notifyDataSetChanged();
     }
 
-    // Phương thức cancelTimer() không còn cần thiết nữa
-    /*
-    public void cancelTimer() {
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-            Log.d(TAG, "Timer cancelled in adapter.");
-        }
-    }
-    */
 
     static class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView textTitle, textSubTitle, textDateTime;
         LinearLayout layoutNote;
         RoundedImageView imageNoteItem;
+        Context context;
 
         NoteViewHolder(@NonNull View itemView) {
             super(itemView);
+            context = itemView.getContext();
             textTitle = itemView.findViewById(R.id.textTitle);
             textSubTitle = itemView.findViewById(R.id.textSubTitle);
             textDateTime = itemView.findViewById(R.id.textDateTime);
@@ -212,30 +199,29 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
                 if (background instanceof GradientDrawable) {
                     ((GradientDrawable) background).setColor(parsedColor);
                 } else {
-                    layoutNote.setBackgroundColor(parsedColor);
+                    layoutNote.setBackgroundColor(parsedColor); // Fallback nếu background không phải GradientDrawable
                 }
             }
 
             if (imageNoteItem != null) {
                 if (note.getImagePath() != null && !note.getImagePath().trim().isEmpty()) {
-                    try {
-                        Bitmap bitmap = BitmapFactory.decodeFile(note.getImagePath());
-                        if (bitmap != null) {
-                            imageNoteItem.setImageBitmap(bitmap);
-                            imageNoteItem.setVisibility(View.VISIBLE);
-                        } else {
-                            Log.w(TAG, "Bitmap is null from file path: " + note.getImagePath() + " for note: " + (note.getTitle() != null ? note.getTitle() : "N/A"));
-                            imageNoteItem.setVisibility(View.GONE);
-                        }
-                    } catch (OutOfMemoryError oom) {
-                        Log.e(TAG, "OutOfMemoryError decoding image file: " + note.getImagePath(), oom);
-                        imageNoteItem.setVisibility(View.GONE);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Other error decoding image file: " + note.getImagePath(), e);
+                    File imageFile = new File(note.getImagePath());
+                    if (imageFile.exists()) {
+                        Glide.with(context)
+                                .load(imageFile) // Tải từ File object
+                                .placeholder(R.drawable.ic_placeholder_image) // Hình ảnh tạm thời (tạo một drawable placeholder)
+                                .error(R.drawable.ic_placeholder_image) // Hình ảnh khi lỗi (tạo một drawable error)
+                                .diskCacheStrategy(DiskCacheStrategy.ALL) // Chiến lược cache
+                                .into(imageNoteItem);
+                        imageNoteItem.setVisibility(View.VISIBLE);
+                    } else {
+                        Log.w(TAG, "Image file does not exist: " + note.getImagePath() + " for note: " + (note.getTitle() != null ? note.getTitle() : "N/A"));
                         imageNoteItem.setVisibility(View.GONE);
                     }
                 } else {
                     imageNoteItem.setVisibility(View.GONE);
+                    // Nếu muốn xóa ảnh cũ khi imagePath là null/empty:
+                     Glide.with(context).clear(imageNoteItem);
                 }
             }
         }
